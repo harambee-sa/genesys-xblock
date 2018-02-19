@@ -3,6 +3,7 @@
 import pkg_resources
 import logging
 import requests
+import textwrap
 from django.conf import settings
 from xblock.core import XBlock
 from django.contrib.auth.models import User
@@ -18,6 +19,20 @@ loader = ResourceLoader(__name__)
 @XBlock.needs('settings')
 @XBlock.wants('badging')
 @XBlock.wants('user')
+
+DEFAULT_EMBED_CODE = textwrap.dedent("""
+    <iframe
+        src="{}"
+        frameborder="0"
+        width="960"
+        height="569"
+        allowfullscreen="true"
+        mozallowfullscreen="true"
+        webkitallowfullscreen="true">
+    </iframe>
+""") .format(DEFAULT_DOCUMENT_URL)
+
+
 class GenesysXBlock(XBlock):
     """
     TO-DO: document what your XBlock does.
@@ -26,6 +41,31 @@ class GenesysXBlock(XBlock):
     # Fields are defined on the class.  You can access them in your code as
     # self.<fieldname>.
 
+    display_name = String(
+        display_name="Display Name",
+        help="This name appears in the horizontal navigation at the top of the page.",
+        scope=Scope.settings,
+        default=u"Badger"
+    )
+
+    invitation_url = String(
+        help="The invitation url used to access tests by respondants on Genesys",
+        scope=Scope.user_state,
+        default=u""
+    )
+
+    embed_code = String(
+        display_name="Embed Code",
+        help=(
+            "Google provides an embed code for Drive documents. In the Google Drive document, "
+            "from the File menu, select Publish to the Web. Modify settings as needed, click "
+            "Publish, and copy the embed code into this field."
+        ),
+        scope=Scope.settings,
+        default=DEFAULT_EMBED_CODE
+    )
+
+    editable_fields = ('display_name',)
 
     @property
     def api_token(self):
@@ -67,8 +107,10 @@ class GenesysXBlock(XBlock):
         The primary view of the GenesysXBlock, shown to students
         when viewing courses.
         """
-        html = self.resource_string("static/html/genesys.html")
-        frag = Fragment(html.format(self=self))
+
+        content = {}
+
+        frag = Fragment(loader.render_django_template("static/html/genesys.html", context).format(self=self))
         frag.add_css(self.resource_string("static/css/genesys.css"))
         frag.add_javascript(self.resource_string("static/js/src/genesys.js"))
         frag.initialize_js('GenesysXBlock')
