@@ -117,11 +117,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
             field_info = self._make_field_info(field_name, field)
             if field_info is not None:
                 context["fields"].append(field_info)
-        frag.content = loader.render_django_template("static/html/badger_edit.html", context)
-        frag.add_javascript(loader.load_unicode("static/js/src/badger_edit.js"))
-        frag.initialize_js('StudioEditableXBlockMixin', {
-            'badgrApiToken': self.api_token
-        })
+        frag.content = loader.render_django_template("static/html/genesys_edit.html", context)
+        frag.add_javascript(loader.load_unicode("static/js/src/genesys_edit.js"))
+        frag.initialize_js('StudioEditableXBlockMixin')
         return frag
 
     def resource_string(self, path):
