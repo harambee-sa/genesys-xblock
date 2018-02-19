@@ -108,7 +108,10 @@ class GenesysXBlock(XBlock):
         when viewing courses.
         """
 
-        content = {}
+        content = {
+            "embed_code": self.embed_code,
+            "display_name": self.display_name
+        }
 
         frag = Fragment(loader.render_django_template("static/html/genesys.html", context).format(self=self))
         frag.add_css(self.resource_string("static/css/genesys.css"))
