@@ -1,0 +1,9 @@
+/* CSS for GenesysXBlock */
+
+.genesys_block .count {
+    font-weight: bold;
+}
+
+.genesys_block p {
+    cursor: pointer;
+}
