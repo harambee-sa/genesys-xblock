@@ -1,12 +1,23 @@
 """TO-DO: Write a description of what this XBlock is."""
 
 import pkg_resources
-
+import logging
+import requests
+from django.conf import settings
 from xblock.core import XBlock
-from xblock.fields import Scope, Integer
+from django.contrib.auth.models import User
+from xblock.fields import Scope, Integer, String, Float, List, Boolean, ScopeIds
+from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
+from xblockutils.studio_editable import StudioEditableXBlockMixin
+from xblockutils.settings import XBlockWithSettingsMixin
+logger = logging.getLogger(__name__)
+loader = ResourceLoader(__name__)
 
 
+@XBlock.needs('settings')
+@XBlock.wants('badging')
+@XBlock.wants('user')
 class GenesysXBlock(XBlock):
     """
     TO-DO: document what your XBlock does.
@@ -15,11 +26,35 @@ class GenesysXBlock(XBlock):
     # Fields are defined on the class.  You can access them in your code as
     # self.<fieldname>.
 
-    # TO-DO: delete count, and define your own fields.
-    count = Integer(
-        default=0, scope=Scope.user_state,
-        help="A simple counter, to show something happening",
-    )
+
+    @property
+    def api_token(self):
+        """
+        Returns the Geneysis API token from Settings Service.
+        The API key should be set in both lms/cms env.json files inside XBLOCK_SETTINGS.
+        Example:
+            "XBLOCK_SETTINGS": {
+                "GenesysXBlock": {
+                    "GENESYS_API_TOKEN": "YOUR API KEY GOES HERE"
+                }
+            },
+        """
+        return self.get_xblock_settings().get('GENESYS_API_TOKEN', '')
+
+    @property
+    def api_url(self):
+        """
+        Returns the URL of the Geneysis domain from the Settings Service.
+        The URL hould be set in both lms/cms env.json files inside XBLOCK_SETTINGS.
+        Example:
+            "XBLOCK_SETTINGS": {
+                "GenesysXBlock": {
+                    "GENESYS_BASE_URL": "YOUR URL  GOES HERE"
+                }
+            },
+        """
+        return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
+
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
