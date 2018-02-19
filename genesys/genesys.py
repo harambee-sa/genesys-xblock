@@ -16,9 +16,11 @@ logger = logging.getLogger(__name__)
 loader = ResourceLoader(__name__)
 
 
-@XBlock.needs('settings')
-@XBlock.wants('badging')
-@XBlock.wants('user')
+
+DEFAULT_DOCUMENT_URL = (
+    'https://docs.google.com/presentation/d/1x2ZuzqHsMoh1epK8VsGAlanSo7r9z55ualwQlj-ofBQ/embed?'
+    'start=true&loop=true&delayms=10000'
+)
 
 DEFAULT_EMBED_CODE = textwrap.dedent("""
     <iframe
@@ -32,8 +34,9 @@ DEFAULT_EMBED_CODE = textwrap.dedent("""
     </iframe>
 """) .format(DEFAULT_DOCUMENT_URL)
 
-
-class GenesysXBlock(XBlock):
+@XBlock.needs('settings')
+@XBlock.wants('user')
+class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
     """
     TO-DO: document what your XBlock does.
     """
@@ -45,7 +48,7 @@ class GenesysXBlock(XBlock):
         display_name="Display Name",
         help="This name appears in the horizontal navigation at the top of the page.",
         scope=Scope.settings,
-        default=u"Badger"
+        default=u"Genesys"
     )
 
     invitation_url = String(
@@ -95,6 +98,31 @@ class GenesysXBlock(XBlock):
         """
         return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
 
+    
+    def studio_view(self, context):
+        """
+        Render a form for editing this XBlock
+        """
+        frag = Fragment()
+        context = {'fields': []}
+        
+        # Build a list of all the fields that can be edited:
+        for field_name in self.editable_fields:
+            field = self.fields[field_name]
+            assert field.scope in (Scope.content, Scope.settings), (
+                "Only Scope.content or Scope.settings fields can be used with "
+                "StudioEditableXBlockMixin. Other scopes are for user-specific data and are "
+                "not generally created/configured by content authors in Studio."
+            )
+            field_info = self._make_field_info(field_name, field)
+            if field_info is not None:
+                context["fields"].append(field_info)
+        frag.content = loader.render_django_template("static/html/badger_edit.html", context)
+        frag.add_javascript(loader.load_unicode("static/js/src/badger_edit.js"))
+        frag.initialize_js('StudioEditableXBlockMixin', {
+            'badgrApiToken': self.api_token
+        })
+        return frag
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
