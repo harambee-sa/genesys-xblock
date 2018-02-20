@@ -16,7 +16,7 @@ function GenesysXBlock(runtime, element) {
             iframe.addClass('no-width-height');
         }
 
-        iframe.attr('title', display_name);
+    iframe.attr('title', display_name);
     }else if(image.length > 0){
         image.attr('alt', alt_text);
     }

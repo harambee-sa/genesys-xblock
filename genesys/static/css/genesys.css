@@ -1,9 +1,20 @@
 /* CSS for GenesysXBlock */
 
-.genesys_block .count {
-    font-weight: bold;
+.genesys_xblock iframe{
+    max-width: 100%;
+    display:block;
+    margin: 0 auto;
 }
 
-.genesys_block p {
-    cursor: pointer;
+.genesys_xblock iframe.no-width-height{
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 450px;
+}
+
+.genesys_xblock img{
+    width: auto;
+    height : auto;
+    max-width: 100%;
 }

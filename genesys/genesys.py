@@ -12,6 +12,7 @@ from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from xblockutils.settings import XBlockWithSettingsMixin
+from xblockutils.publish_event import PublishEventMixin
 logger = logging.getLogger(__name__)
 loader = ResourceLoader(__name__)
 
@@ -36,7 +37,7 @@ DEFAULT_EMBED_CODE = textwrap.dedent("""
 
 @XBlock.needs('settings')
 @XBlock.wants('user')
-class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
+class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, PublishEventMixin):
     """
     TO-DO: document what your XBlock does.
     """
@@ -57,6 +58,18 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
         default=u""
     )
 
+    respondant_id = String(
+        help="The id of the respondent created/used for this invitation.",
+        scope=Scope.user_state,
+        default=u""
+    )
+
+    invitation_id = String(
+        help="The numerical id of the invitation created on Genesys system.",
+        scope=Scope.user_state,
+        default=u""
+    )
+
     embed_code = String(
         display_name="Embed Code",
         help=(
@@ -68,7 +81,35 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
         default=DEFAULT_EMBED_CODE
     )
 
-    editable_fields = ('display_name',)
+    questionnaire_id = String(
+        display_name="Questionnaire ID",
+        help=(
+            "Genesys Questionnaire ID needed to access test"
+        ),
+        scope=Scope.settings,
+        default=''
+    )
+    
+    external_id = String(
+        display_name="External ID",
+        help=(
+            "Genesys external ID needed to access test"
+        ),
+        scope=Scope.settings,
+        default=''
+    )
+
+    expiry_date = String(
+        display_name="Expiry Date",
+        help=(
+            "Test Expriry Date"
+        ),
+        scope=Scope.settings,
+        default=''
+    )
+
+    editable_fields = ('display_name', 'questionnaire_id ', 'external_id', 'expiry_date',)
+
 
     @property
     def api_token(self):
@@ -85,7 +126,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
         return self.get_xblock_settings().get('GENESYS_API_TOKEN', '')
 
     @property
-    def api_url(self):
+    def api_base_url(self):
         """
         Returns the URL of the Geneysis domain from the Settings Service.
         The URL hould be set in both lms/cms env.json files inside XBLOCK_SETTINGS.
@@ -97,6 +138,23 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
             },
         """
         return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
+
+    def request_invitation_params():
+
+        params = {
+            "respondentFirstName":"Sam",
+            "respondentFamilyName":"Sample",
+            "respondentGender":"M",
+            "respondentEmailAddress":"sam@sample.com",
+            "questionnaireId": self.questionnaire_id, 
+            "externalId": self.external_id, 
+            "expiryDate": self.expiry_date
+        }
+
+    def api_request_invitation(self):
+
+
+
 
     
     def studio_view(self, context):
@@ -135,9 +193,10 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock):
         """
 
         content = {
-            "embed_code": self.embed_code,
+            "src_url": DEFAULT_DOCUMENT_URL,
             "display_name": self.display_name
         }
+
 
         frag = Fragment(loader.render_django_template("static/html/genesys.html", context).format(self=self))
         frag.add_css(self.resource_string("static/css/genesys.css"))
