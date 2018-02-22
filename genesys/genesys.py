@@ -10,6 +10,8 @@ from django.contrib.auth.models import User
 from xblock.fields import Scope, Integer, String, Float, List, Boolean, ScopeIds
 from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
+from xblock.scorable import ScorableXBlockMixin, Score
+
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from xblockutils.settings import XBlockWithSettingsMixin
 from xblockutils.publish_event import PublishEventMixin
@@ -154,7 +156,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, 
     def api_request_invitation(self):
 
 
-
+        return ''
 
     
     def studio_view(self, context):
