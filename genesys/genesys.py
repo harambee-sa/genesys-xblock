@@ -3,6 +3,7 @@
 import pkg_resources
 import logging
 import requests
+from requests.auth import HTTPBasicAuth
 import textwrap
 from django.conf import settings
 from xblock.core import XBlock
@@ -39,7 +40,7 @@ DEFAULT_EMBED_CODE = textwrap.dedent("""
 
 @XBlock.needs('settings')
 @XBlock.wants('user')
-class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, PublishEventMixin):
+class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSettingsMixin, XBlock, PublishEventMixin):
     """
     TO-DO: document what your XBlock does.
     """
@@ -60,7 +61,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, 
         default=u""
     )
 
-    respondant_id = String(
+    respondent_id = String(
         help="The id of the respondent created/used for this invitation.",
         scope=Scope.user_state,
         default=u""
@@ -110,11 +111,16 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, 
         default=''
     )
 
+    score = Score(help=("Dictionary with the current student score"),
+        scope=Scope.user_state,
+    )
+
     editable_fields = ('display_name', 'questionnaire_id ', 'external_id', 'expiry_date',)
 
+    has_score = True
 
     @property
-    def api_token(self):
+    def api_key(self):
         """
         Returns the Geneysis API token from Settings Service.
         The API key should be set in both lms/cms env.json files inside XBLOCK_SETTINGS.
@@ -125,7 +131,21 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, 
                 }
             },
         """
-        return self.get_xblock_settings().get('GENESYS_API_TOKEN', '')
+        return self.get_xblock_settings().get('GENESYS_API_KEY', '')
+
+    @property
+    def api_configuration_id(self):
+        """
+        Returns the Geneysis API token from Settings Service.
+        The API key should be set in both lms/cms env.json files inside XBLOCK_SETTINGS.
+        Example:
+            "XBLOCK_SETTINGS": {
+                "GenesysXBlock": {
+                    "HARAMBEE_GENESYS_CONFIG_ID": "YOUR API KEY GOES HERE"
+                }
+            },
+        """
+        return self.get_xblock_settings().get('GENESYS_CONFIG_ID', '')
 
     @property
     def api_base_url(self):
@@ -141,7 +161,26 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, 
         """
         return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
 
-    def request_invitation_params():
+
+    @property
+    def api_invitation_url(self):
+
+        return "{}/invitations/{}".format(
+            self.api_base_url, 
+            self.api_configuration_id
+        )
+
+    @property
+    def api_results_url(self):
+
+        return "{}/results/{}?respondantId={}".format(
+            self.api_base_url, 
+            self.api_configuration_id,
+            self.respondent_id
+        )
+
+    @property
+    def api_invitation_params():
 
         params = {
             "respondentFirstName":"Sam",
@@ -152,11 +191,67 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, 
             "externalId": self.external_id, 
             "expiryDate": self.expiry_date
         }
+        
+        return params
 
-    def api_request_invitation(self):
+    @property
+    def get_headers(self):
+        
+        return {
+            'Content-Type': 'application/json',
+        }
 
+    @property
+    def api_authentication(self):
+
+        username = self.get_xblock_settings().get('GENESYS_API_USERNAME', '')
+
+        return HTTPBasicAuth(username, self.api_key)
+
+    def get_genesys_invitation_handler(self):
+
+
+        invitation = requests.post(
+            url=self.api_invitation_url,
+            headers=self.get_headers,
+            auth=self.api_authentication,
+            data=self.api_invitation_params,
+            
+        )
+
+        if invitation.ok:
+            self.invitation_id = invitation.json()['invitationId']
+            self.respondent_id = invitation.json()['respondentId']
+            self.invitation_url = invitation.json()['invitationUrl']
+
+        return {
+            'invitationId': self.invitation_id,
+            'respondentId': self.respondent_id,
+            'invitationUrl': self.invitation_url
+        }
+
+    def get_genesys_test_result(self, respondent_id, questionnaire_id):
 
         return ''
+
+    # TO-DO: change this view to display your data your own way.
+    def student_view(self, context=None):
+        """
+        The primary view of the GenesysXBlock, shown to students
+        when viewing courses.
+        """
+
+        content = {
+            "src_url": DEFAULT_DOCUMENT_URL,
+            "display_name": self.display_name
+        }
+
+
+        frag = Fragment(loader.render_django_template("static/html/genesys.html", context).format(self=self))
+        frag.add_css(self.resource_string("static/css/genesys.css"))
+        frag.add_javascript(self.resource_string("static/js/src/genesys.js"))
+        frag.initialize_js('GenesysXBlock')
+        return frag
 
     
     def studio_view(self, context):
@@ -187,24 +282,25 @@ class GenesysXBlock(StudioEditableXBlockMixin, XBlockWithSettingsMixin, XBlock, 
         data = pkg_resources.resource_string(__name__, path)
         return data.decode("utf8")
 
-    # TO-DO: change this view to display your data your own way.
-    def student_view(self, context=None):
+
+    def calculate_score(self):
         """
-        The primary view of the GenesysXBlock, shown to students
-        when viewing courses.
+        Calculate a new raw score based on the state of the problem.
+        This method should not modify the state of the XBlock.
+        Returns:
+            Score(raw_earned=float, raw_possible=float)
         """
+        raise NotImplementedError
 
-        content = {
-            "src_url": DEFAULT_DOCUMENT_URL,
-            "display_name": self.display_name
-        }
-
-
-        frag = Fragment(loader.render_django_template("static/html/genesys.html", context).format(self=self))
-        frag.add_css(self.resource_string("static/css/genesys.css"))
-        frag.add_javascript(self.resource_string("static/js/src/genesys.js"))
-        frag.initialize_js('GenesysXBlock')
-        return frag
+    def get_score(self):
+        score = self.runtime.publish(
+            self, 
+            "grade",
+            {
+                "value": submission_result,
+                "max_value": max_value
+            }
+        )
 
     # TO-DO: change this handler to perform your own actions.  You may need more
     # than one handler, or you may not need any handlers at all.
