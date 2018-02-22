@@ -111,9 +111,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=''
     )
 
-    score = Score(help=("Dictionary with the current student score"),
-        scope=Scope.user_state,
-    )
 
     editable_fields = ('display_name', 'questionnaire_id ', 'external_id', 'expiry_date',)
 
@@ -208,7 +205,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
         return HTTPBasicAuth(username, self.api_key)
 
-    def get_genesys_invitation_handler(self):
+    def get_genesys_invitation(self):
 
 
         invitation = requests.post(
@@ -225,9 +222,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             self.invitation_url = invitation.json()['invitationUrl']
 
         return {
-            'invitationId': self.invitation_id,
-            'respondentId': self.respondent_id,
-            'invitationUrl': self.invitation_url
+            'invitation_id': self.invitation_id,
+            'respondent_id': self.respondent_id,
+            'invitation_url': self.invitation_url
         }
 
     def get_genesys_test_result(self, respondent_id, questionnaire_id):
@@ -241,8 +238,10 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         when viewing courses.
         """
 
+        self.get_genesys_invitation()
+
         content = {
-            "src_url": DEFAULT_DOCUMENT_URL,
+            "src_url": self.invitation_url,
             "display_name": self.display_name
         }
 
