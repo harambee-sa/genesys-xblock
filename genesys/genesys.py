@@ -2,6 +2,7 @@
 
 import pkg_resources
 import logging
+import json
 import requests
 from requests.auth import HTTPBasicAuth
 import textwrap
@@ -12,6 +13,8 @@ from xblock.fields import Scope, Integer, String, Float, List, Boolean, ScopeIds
 from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
 from xblock.scorable import ScorableXBlockMixin, Score
+from django.contrib.auth.models import User
+
 
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from xblockutils.settings import XBlockWithSettingsMixin
@@ -124,7 +127,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Example:
             "XBLOCK_SETTINGS": {
                 "GenesysXBlock": {
-                    "GENESYS_API_TOKEN": "YOUR API KEY GOES HERE"
+                    "GENESYS_API_KEY": "YOUR API KEY GOES HERE"
                 }
             },
         """
@@ -138,7 +141,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Example:
             "XBLOCK_SETTINGS": {
                 "GenesysXBlock": {
-                    "HARAMBEE_GENESYS_CONFIG_ID": "YOUR API KEY GOES HERE"
+                    "GENESYS_CONFIG_ID": "YOUR API KEY GOES HERE"
                 }
             },
         """
@@ -173,37 +176,35 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         return "{}/results/{}?respondantId={}".format(
             self.api_base_url, 
             self.api_configuration_id,
-            self.respondent_id
+            self.respondent
         )
 
     @property
     def api_invitation_params():
 
+        user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
+
+        
         params = {
-            "respondentFirstName":"Sam",
-            "respondentFamilyName":"Sample",
-            "respondentGender":"M",
-            "respondentEmailAddress":"sam@sample.com",
+            "respondentFirstName":user.first_name,
+            "respondentFamilyName":user.last_name,
+            "respondentGender": "",
+            "respondentEmailAddress": "{}@harmbee.com".format(user.first_name),
             "questionnaireId": self.questionnaire_id, 
             "externalId": self.external_id, 
             "expiryDate": self.expiry_date
         }
+
+        data = json.dumps(self.api_invitation_params)
         
-        return params
+        return data
 
     @property
     def get_headers(self):
         
-        return {
-            'Content-Type': 'application/json',
-        }
+      
+        return headers
 
-    @property
-    def api_authentication(self):
-
-        username = self.get_xblock_settings().get('GENESYS_API_USERNAME', '')
-
-        return HTTPBasicAuth(username, self.api_key)
 
     def get_genesys_invitation(self):
 
@@ -211,7 +212,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         invitation = requests.post(
             url=self.api_invitation_url,
             headers=self.get_headers,
-            auth=self.api_authentication,
             data=self.api_invitation_params,
             
         )
@@ -238,7 +238,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         when viewing courses.
         """
 
-        self.get_genesys_invitation()
+        invitation_details = self.get_genesys_invitation()
+
+        
 
         content = {
             "src_url": self.invitation_url,
@@ -300,6 +302,19 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 "max_value": max_value
             }
         )
+
+    @XBlock.json_handler
+    def make_pdf_json(self, data, suffix=''):
+
+        '''
+        This is a XBlock json handler for the async pdf download
+        '''
+        user = User.objects.get(id=data['user_id'])
+        which_blocks = ast.literal_eval(data['these_blocks'])
+        blocks = self.get_blocks_list(user, which_blocks)
+        html = self.get_user_layout(blocks, user)
+
+        return {'html': html, 'user_name': user.username}
 
     # TO-DO: change this handler to perform your own actions.  You may need more
     # than one handler, or you may not need any handlers at all.

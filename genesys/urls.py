@@ -4,5 +4,5 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
-    url(r'^dashboard$', views.GenesysView, name='genesys_view'),
+    url(r'^genesis_webhook$', views.GenesysView, name='genesys_webhook'),
 ]

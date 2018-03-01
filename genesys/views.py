@@ -1,12 +1,15 @@
 
 
-
+from .models import GenesysData
 
 def GenesysView(request):
 
-	def validate_data():
-		return ''
 
 	if request.method == 'POST':
 
-
+		reques.POST.get('')
+		reques.POST.get('')
+		reques.POST.get('')
+		reques.POST.get('')
+		reques.POST.get('')
+		reques.POST.get('')
