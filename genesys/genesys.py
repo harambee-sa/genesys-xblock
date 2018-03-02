@@ -180,9 +180,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         )
 
     @property
-    def api_invitation_params():
+    def api_invitation_params(self):
 
-        user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
+        user = User.objects.get(username='lidijarad')
 
         
         params = {
@@ -195,14 +195,14 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "expiryDate": self.expiry_date
         }
 
-        data = json.dumps(self.api_invitation_params)
+        data = json.dumps(params)
         
         return data
 
     @property
     def get_headers(self):
         
-      
+       
         return headers
 
 
