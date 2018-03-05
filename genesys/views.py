@@ -1,10 +1,14 @@
 
 
 from .models import GenesysData
+from django.http import HttpResponse, HttpResponseForbidden
 
 import requests  
 import json
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 def genesys_result_receiver(request):
 
 	if request.method == 'POST':
@@ -19,5 +23,6 @@ def genesys_result_receiver(request):
 			invitation_id = received_json_data['invitationId'],
 
 		)
+		
 
-
+	return HttpResponse('ping')
