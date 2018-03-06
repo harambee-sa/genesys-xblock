@@ -66,13 +66,13 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=u""
     )
 
-    respondent_id = String(
+    respondent_id = Integer(
         help="The id of the respondent created/used for this invitation.",
         scope=Scope.user_state,
         default=u""
     )
 
-    invitation_id = String(
+    invitation_id = Integer(
         help="The numerical id of the invitation created on Genesys system.",
         scope=Scope.user_state,
         default=u""
@@ -116,7 +116,15 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=''
     )
 
+    test_started = Boolean(
+        scope=Scope.user_state,
+        default=False
+    )
 
+    result_availble= Boolean(
+        scope=Scope.user_state,
+        default=False
+    )
 
 
     editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date',)
@@ -168,11 +176,10 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         return "{}/results/{}?respondantId={}".format(
             self.api_base_url, 
             self.api_configuration_id,
-            self.respondent
+            self.respondent_id
         )
 
-
-
+   
 
     def api_invitation_params(self, user):
 
@@ -202,8 +209,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             
         )
 
-        print invitation
-
         if invitation.ok:
             self.invitation_id = invitation.json()['invitationId']
             self.respondent_id = invitation.json()['respondentId']
@@ -215,9 +220,13 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             'invitation_url': self.invitation_url
         }
 
-    def get_genesys_test_result(self, respondent_id, questionnaire_id):
+    def get_genesys_test_result(self):
 
-        return ''
+        result = requests.get(
+            url=self.api_results_url,
+            headers=self.get_headers
+        )
+        return json.loads(result)
 
     # TO-DO: change this view to display your data your own way.
     def student_view(self, context=None):
@@ -226,15 +235,26 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         when viewing courses.
         """
 
-        if self.respondent_id == "":
+
+        if self.respondent_id is None:
             try:
                 user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
                 invitation = self.get_genesys_invitation(user)
             except Exception as e:
                 logger.error('If you are using Studio, you do not have access to self.runtime.get_real_user')
-        else:
-            
-            pass
+        if self.test_started:
+            try:
+                # Check if the data base entry exists, the test has been completed, fetch the result
+                gen_data = GenesysData.objects.get(respondent_id=self.respondent_id)
+                self.test_completed = True
+            except GenesysData.DoesNotExsit:
+                logger.error('')
+        if self.test_completed:
+            #fetch the test
+            try:
+                result = json.dumps(self.get_genesys_test_result())
+                result['']
+
 
         context = {
             "src_url": self.invitation_url,
@@ -298,17 +318,13 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         )
 
     @XBlock.json_handler
-    def make_pdf_json(self, data, suffix=''):
+    def test_started_handler(self, data, suffix=''):
 
         '''
         This is a XBlock json handler for the async pdf download
         '''
-        user = User.objects.get(id=data['user_id'])
-        which_blocks = ast.literal_eval(data['these_blocks'])
-        blocks = self.get_blocks_list(user, which_blocks)
-        html = self.get_user_layout(blocks, user)
-
-        return {'html': html, 'user_name': user.username}
+        
+        return {"started": True}
 
     # TO-DO: change this handler to perform your own actions.  You may need more
     # than one handler, or you may not need any handlers at all.

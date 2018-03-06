@@ -10,6 +10,7 @@ import urlparse
 
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+from .genesys import GenesysXBlock
 
 @csrf_exempt
 def genesys_result_receiver(request):
@@ -37,4 +38,4 @@ def genesys_result_receiver(request):
 			)
 
 
-	return HttpResponse()
+	return HttpResponse('Ok')
