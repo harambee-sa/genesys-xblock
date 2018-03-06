@@ -4,11 +4,13 @@ import pkg_resources
 import logging
 import json
 import requests
+import random
 from requests.auth import HTTPBasicAuth
 import textwrap
 from django.conf import settings
 from xblock.core import XBlock
 from django.contrib.auth.models import User
+from student.models import UserProfile
 from xblock.fields import Scope, Integer, String, Float, List, Boolean, ScopeIds
 from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
@@ -22,7 +24,7 @@ from xblockutils.publish_event import PublishEventMixin
 logger = logging.getLogger(__name__)
 loader = ResourceLoader(__name__)
 
-
+from .models import GenesysData
 
 DEFAULT_DOCUMENT_URL = (
     'https://docs.google.com/presentation/d/1x2ZuzqHsMoh1epK8VsGAlanSo7r9z55ualwQlj-ofBQ/embed?'
@@ -115,23 +117,11 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     )
 
 
-    editable_fields = ('display_name', 'questionnaire_id ', 'external_id', 'expiry_date',)
+
+
+    editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date',)
 
     has_score = True
-
-    @property
-    def api_key(self):
-        """
-        Returns the Geneysis API token from Settings Service.
-        The API key should be set in both lms/cms env.json files inside XBLOCK_SETTINGS.
-        Example:
-            "XBLOCK_SETTINGS": {
-                "GenesysXBlock": {
-                    "GENESYS_API_KEY": "YOUR API KEY GOES HERE"
-                }
-            },
-        """
-        return self.get_xblock_settings().get('GENESYS_API_KEY', '')
 
     @property
     def api_configuration_id(self):
@@ -145,7 +135,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 }
             },
         """
-        return self.get_xblock_settings().get('GENESYS_CONFIG_ID', '')
+        # return self.get_xblock_settings().get('GENESYS_CONFIG_ID', '')
+        return 'harambee-staging'
 
     @property
     def api_base_url(self):
@@ -159,7 +150,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 }
             },
         """
-        return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
+        # return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
+        return 'https://api-rest.genesysonline.net/'
 
 
     @property
@@ -179,42 +171,38 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             self.respondent
         )
 
-    @property
-    def api_invitation_params(self):
 
-        user = User.objects.get(username='lidijarad')
 
-        
+
+    def api_invitation_params(self, user):
+
+        if user.profile.gender is None:
+            user.profile.gender = 'o'
+            user.save()
+
         params = {
             "respondentFirstName":user.first_name,
             "respondentFamilyName":user.last_name,
-            "respondentGender": "",
-            "respondentEmailAddress": "{}@harmbee.com".format(user.first_name),
+            "respondentGender": user.profile.gender,
+            "respondentEmailAddress": user.email,
             "questionnaireId": self.questionnaire_id, 
             "externalId": self.external_id, 
             "expiryDate": self.expiry_date
         }
 
         data = json.dumps(params)
-        
         return data
 
-    @property
-    def get_headers(self):
-        
-       
-        return headers
-
-
-    def get_genesys_invitation(self):
-
+    def get_genesys_invitation(self, user):
 
         invitation = requests.post(
             url=self.api_invitation_url,
             headers=self.get_headers,
-            data=self.api_invitation_params,
+            data=self.api_invitation_params(user),
             
         )
+
+        print invitation
 
         if invitation.ok:
             self.invitation_id = invitation.json()['invitationId']
@@ -238,11 +226,17 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         when viewing courses.
         """
 
-        invitation_details = self.get_genesys_invitation()
+        if self.respondent_id == "":
+            try:
+                user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
+                invitation = self.get_genesys_invitation(user)
+            except Exception as e:
+                logger.error('If you are using Studio, you do not have access to self.runtime.get_real_user')
+        else:
+            
+            pass
 
-        
-
-        content = {
+        context = {
             "src_url": self.invitation_url,
             "display_name": self.display_name
         }
