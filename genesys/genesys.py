@@ -5,8 +5,7 @@ import logging
 import json
 import requests
 import random
-from requests.auth import HTTPBasicAuth
-import textwrap
+from .models import GenesysData
 from django.conf import settings
 from xblock.core import XBlock
 from django.contrib.auth.models import User
@@ -16,7 +15,7 @@ from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
 from xblock.scorable import ScorableXBlockMixin, Score
 from django.contrib.auth.models import User
-
+from django.core.exceptions import ObjectDoesNotExist
 
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from xblockutils.settings import XBlockWithSettingsMixin
@@ -24,24 +23,7 @@ from xblockutils.publish_event import PublishEventMixin
 logger = logging.getLogger(__name__)
 loader = ResourceLoader(__name__)
 
-from .models import GenesysData
 
-DEFAULT_DOCUMENT_URL = (
-    'https://docs.google.com/presentation/d/1x2ZuzqHsMoh1epK8VsGAlanSo7r9z55ualwQlj-ofBQ/embed?'
-    'start=true&loop=true&delayms=10000'
-)
-
-DEFAULT_EMBED_CODE = textwrap.dedent("""
-    <iframe
-        src="{}"
-        frameborder="0"
-        width="960"
-        height="569"
-        allowfullscreen="true"
-        mozallowfullscreen="true"
-        webkitallowfullscreen="true">
-    </iframe>
-""") .format(DEFAULT_DOCUMENT_URL)
 
 @XBlock.needs('settings')
 @XBlock.wants('user')
@@ -60,8 +42,22 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=u"Genesys"
     )
 
+    instruction = String(
+        display_name="Instruction Message",
+        help="The instruction message that appears above the hyperlink to the Genesys test",
+        scope=Scope.settings,
+        default=u"Click on the link below when you are ready to start the test."
+    )
+
+    start_now = String(
+        display_name="Start Message",
+        help="The test for the hyperlink",
+        scope=Scope.settings,
+        default=u"Start test now!"
+    )
+
     invitation_url = String(
-        help="The invitation url used to access tests by respondants on Genesys",
+        help="The invitation url used to access tests by respondents on Genesys",
         scope=Scope.user_state,
         default=u""
     )
@@ -76,17 +72,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         help="The numerical id of the invitation created on Genesys system.",
         scope=Scope.user_state,
         default=u""
-    )
-
-    embed_code = String(
-        display_name="Embed Code",
-        help=(
-            "Google provides an embed code for Drive documents. In the Google Drive document, "
-            "from the File menu, select Publish to the Web. Modify settings as needed, click "
-            "Publish, and copy the embed code into this field."
-        ),
-        scope=Scope.settings,
-        default=DEFAULT_EMBED_CODE
     )
 
     questionnaire_id = String(
@@ -143,8 +128,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 }
             },
         """
-        # return self.get_xblock_settings().get('GENESYS_CONFIG_ID', '')
-        return 'harambee-staging'
+        return self.get_xblock_settings().get('GENESYS_CONFIG_ID', '')
+        # return 'harambee-staging'
 
     @property
     def api_base_url(self):
@@ -158,8 +143,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 }
             },
         """
-        # return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
-        return 'https://api-rest.genesysonline.net/'
+        return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
+        # return 'https://api-rest.genesysonline.net/'
 
 
     @property
@@ -173,13 +158,16 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     @property
     def api_results_url(self):
 
-        return "{}/results/{}?respondantId={}".format(
+        return "{}/results/{}?respondentId={}".format(
             self.api_base_url, 
             self.api_configuration_id,
             self.respondent_id
         )
 
-   
+    @property
+    def get_headers(self):
+        
+        return return self.get_xblock_settings().get('GENESYS_HEADERS' '')
 
     def api_invitation_params(self, user):
 
@@ -226,7 +214,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             url=self.api_results_url,
             headers=self.get_headers
         )
-        return json.loads(result)
+        return json.loads(result.text)
 
     # TO-DO: change this view to display your data your own way.
     def student_view(self, context=None):
@@ -242,23 +230,22 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 invitation = self.get_genesys_invitation(user)
             except Exception as e:
                 logger.error('If you are using Studio, you do not have access to self.runtime.get_real_user')
-        if self.test_started:
+        else:
             try:
-                # Check if the data base entry exists, the test has been completed, fetch the result
                 gen_data = GenesysData.objects.get(respondent_id=self.respondent_id)
-                self.test_completed = True
-            except GenesysData.DoesNotExsit:
-                logger.error('')
-        if self.test_completed:
-            #fetch the test
-            try:
-                result = json.dumps(self.get_genesys_test_result())
-                result['']
-
-
+                result = self.get_genesys_test_result()
+                if result.status_code == requests.codes.ok:
+                    self.test_completed = True
+            except ObjectDoesNotExist:
+                logger.error('The entry does not exist')
+        
+            
         context = {
             "src_url": self.invitation_url,
-            "display_name": self.display_name
+            "display_name": self.display_name,
+            "instruction": self.instruction,
+            "start_now": self.start_now,
+            "completed": self.test_completed
         }
 
 
