@@ -1,11 +1,11 @@
 <div class="genesys_xblock" data-display-name="{{display_name}}">
-    {% if not completed%}
+    {% if not completed and not test_started%}
         <p>{{instruction}}</p>
-        <a class="genesys-test-link" href="{{src_url}}">{{start_now}}</a>
-    {% elif started%}
-         <p>Make sure you have completed all three tests.</p>
-        <a class="genesys-test-link" href="{{src_url}}">Continue to tests</a>
-    {% else%}
+        <a id="genesys-test-link" href="{{src_url}}">{{start_now}}</a>
+    {% elif test_started and not completed%}
+        <p>Make sure you have completed all three tests.</p>
+        <a id="genesys-test-link" href="{{src_url}}">Continue to tests.</a>
+    {% elif completed%}
         You have completed all your tests. They have been graded. 
     {% endif %}
     

@@ -277,9 +277,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 logger.error('If you are using Studio, you do not have access to self.runtime.get_real_user')
         else:
         # If an invitation has been received, try fetch the results, ideally this should happen when the webhook is  POSTed to
-
             try:
                 result = self.get_genesys_test_result()
+                
                 self.result_json = result
                 if result.status_code == requests.codes.ok:
                     self.test_completed = True
@@ -294,7 +294,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "display_name": self.display_name,
             "instruction": self.instruction,
             "start_now": self.start_now,
-            "completed": self.test_completed
+            "completed": self.test_completed,
+            "test_started": self.test_started
         }
 
 
@@ -376,7 +377,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         '''
         This is a XBlock json handler for the async pdf download
         '''
-        
+        print data
+        self.test_started = True
+        print self.test_started
         return {"started": True}
 
     # TO-DO: change this handler to perform your own actions.  You may need more
