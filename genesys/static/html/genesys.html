@@ -1,13 +1,12 @@
 <div class="genesys_xblock" data-display-name="{{display_name}}">
-    <!-- <iframe
-        src="https://assessment-eu.genesysonline.net/Start/067530055495/BZDDCV22/EN"
-        frameborder="0"
-        width="960"
-        height="569"
-        allowfullscreen="true"
-        mozallowfullscreen="true"
-        webkitallowfullscreen="true">
-    </iframe> -->
-    <p>{{instruction}}</p>
-    <a class="genesys-test-link" href="{{src_url}}">{{start_now}}</a>
+    {% if not completed%}
+        <p>{{instruction}}</p>
+        <a class="genesys-test-link" href="{{src_url}}">{{start_now}}</a>
+    {% elif started%}
+         <p>Make sure you have completed all three tests.</p>
+        <a class="genesys-test-link" href="{{src_url}}">Continue to tests</a>
+    {% else%}
+        You have completed all your tests. They have been graded. 
+    {% endif %}
+    
 </div>

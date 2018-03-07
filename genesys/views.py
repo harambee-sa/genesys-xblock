@@ -17,17 +17,17 @@ def genesys_result_receiver(request):
 
 	if request.method == 'POST':
 		
-		referer = request.META.get('HTTP_REFERER')
+		referer = request.META.get('HTTP_HOST')
+		print request.META
     	referer_parts = urlparse.urlparse(referer) if referer else None
     	referer_hostname = referer_parts.hostname if referer_parts is not None else None
 
     	domain_is_whitelisted = (
-        	referer_hostname in getattr(settings, 'CORS_ORIGIN_WHITELIST', [])
+        	referer_hostname in ['localhost:8000']
     	)
     	if not domain_is_whitelisted:
     		return HttpResponseForbidden('Permission denied.')
     	else:
-
 			received_json_data = json.loads(request.body)
 			GenesysData.objects.create(
 				event_type = received_json_data['eventType'],
@@ -38,4 +38,4 @@ def genesys_result_receiver(request):
 			)
 
 
-	return HttpResponse('Ok')
+	return HttpResponse()

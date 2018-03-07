@@ -11,6 +11,7 @@ from xblock.core import XBlock
 from django.contrib.auth.models import User
 from student.models import UserProfile
 from xblock.fields import Scope, Integer, String, Float, List, Boolean, ScopeIds
+from xblock.fields import JSONField
 from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
 from xblock.scorable import ScorableXBlockMixin, Score
@@ -23,7 +24,49 @@ from xblockutils.publish_event import PublishEventMixin
 logger = logging.getLogger(__name__)
 loader = ResourceLoader(__name__)
 
+class ScoreField(JSONField):
+    """
+    Field for blocks that need to store a Score. XBlocks that implement
+    the ScorableXBlockMixin may need to store their score separately
+    from their problem state, specifically for use in staff override
+    of problem scores.
+    """
+    MUTABLE = False
 
+    def from_json(self, value):
+        if value is None:
+            return value
+        if isinstance(value, Score):
+            return value
+
+        if set(value) != {'raw_earned', 'raw_possible'}:
+            raise TypeError('Scores must contain only a raw earned and raw possible value. Got {}'.format(
+                set(value)
+            ))
+
+        raw_earned = value['raw_earned']
+        raw_possible = value['raw_possible']
+
+        if raw_possible < 0:
+            raise ValueError(
+                'Error deserializing field of type {0}: Expected a positive number for raw_possible, got {1}.'.format(
+                    self.display_name,
+                    raw_possible,
+                )
+            )
+
+        if not (0 <= raw_earned <= raw_possible):
+            raise ValueError(
+                'Error deserializing field of type {0}: Expected raw_earned between 0 and {1}, got {2}.'.format(
+                    self.display_name,
+                    raw_possible,
+                    raw_earned
+                )
+            )
+
+        return Score(raw_earned, raw_possible)
+
+    enforce_type = from_json
 
 @XBlock.needs('settings')
 @XBlock.wants('user')
@@ -106,11 +149,13 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=False
     )
 
-    result_availble= Boolean(
+    test_completed= Boolean(
         scope=Scope.user_state,
         default=False
     )
 
+
+    score = ScoreField(help="Dictionary with the current student score", scope=Scope.user_state, enforce_type=False)
 
     editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date',)
 
@@ -143,7 +188,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 }
             },
         """
-        return self.get_xblock_settings().get('GENESYS_BASE_URL' '')
+        return self.get_xblock_settings().get('GENESYS_BASE_URL', '')
         # return 'https://api-rest.genesysonline.net/'
 
 
@@ -167,7 +212,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     @property
     def get_headers(self):
         
-        return return self.get_xblock_settings().get('GENESYS_HEADERS' '')
+        return self.get_xblock_settings().get('GENESYS_HEADERS', '')
 
     def api_invitation_params(self, user):
 
@@ -223,7 +268,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         when viewing courses.
         """
 
-
+        # If no invitation has been received, call Genesys invitations endpoint
         if self.respondent_id is None:
             try:
                 user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
@@ -231,15 +276,19 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             except Exception as e:
                 logger.error('If you are using Studio, you do not have access to self.runtime.get_real_user')
         else:
+        # If an invitation has been received, try fetch the results, ideally this should happen when the webhook is  POSTed to
+
             try:
-                gen_data = GenesysData.objects.get(respondent_id=self.respondent_id)
                 result = self.get_genesys_test_result()
+                self.result_json = result
                 if result.status_code == requests.codes.ok:
                     self.test_completed = True
-            except ObjectDoesNotExist:
-                logger.error('The entry does not exist')
+            except Exception as e:
+                logger.error(str(e))
         
-            
+        calculated_score = self.calculate_score()
+        self.publish_grade(score=calculated_score)
+        print "I AM PUBLISHING THE GRADE", self.result_json
         context = {
             "src_url": self.invitation_url,
             "display_name": self.display_name,
@@ -284,6 +333,14 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         data = pkg_resources.resource_string(__name__, path)
         return data.decode("utf8")
 
+    def set_score(self, score):
+        """
+        Sets the internal score for the problem. This is not derived directly
+        from the internal LCP in keeping with the ScorableXBlock spec.
+        """
+        earned = 1
+        possible = 19
+        return Score(raw_earned=earned, raw_possible=possible)
 
     def calculate_score(self):
         """
@@ -292,17 +349,26 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Returns:
             Score(raw_earned=float, raw_possible=float)
         """
-        raise NotImplementedError
+        earned = 1
+        possible = 18
+        return Score(raw_earned=earned, raw_possible=possible)
 
-    def get_score(self):
-        score = self.runtime.publish(
-            self, 
-            "grade",
+    def publish_grade(self, score=None):
+        """
+        Publishes the student's current grade to the system as an event
+        """
+        if not score:
+            score = Score(raw_earned=2, raw_possible=987)
+        self.runtime.publish(
+            self,
+            'grade',
             {
-                "value": submission_result,
-                "max_value": max_value
+                'value': score.raw_earned,
+                'max_value': score.raw_possible,
             }
         )
+
+        return {'grade': score.raw_earned, 'max_grade': score.raw_possible}
 
     @XBlock.json_handler
     def test_started_handler(self, data, suffix=''):
