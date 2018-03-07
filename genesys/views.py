@@ -17,8 +17,7 @@ def genesys_result_receiver(request):
 
 	if request.method == 'POST':
 		
-		referer = request.META.get('HTTP_HOST')
-		print request.META
+		referer = request.META.get('HTTP_REFERER')
     	referer_parts = urlparse.urlparse(referer) if referer else None
     	referer_hostname = referer_parts.hostname if referer_parts is not None else None
 
