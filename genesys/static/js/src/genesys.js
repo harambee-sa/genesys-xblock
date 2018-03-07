@@ -4,7 +4,7 @@ function GenesysXBlock(runtime, element) {
 	var handlerUrl = runtime.handlerUrl(element, 'test_started_handler');
 
 
-  $('#genesys-test-link', element).click(function(eventObject) {
+  $('.genesys-test-link', element).click(function(eventObject) {
     $.ajax({
         type: "POST",
         url: handlerUrl,

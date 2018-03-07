@@ -259,7 +259,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             url=self.api_results_url,
             headers=self.get_headers
         )
-        return json.loads(result.text)
+        return result
 
     # TO-DO: change this view to display your data your own way.
     def student_view(self, context=None):
@@ -276,19 +276,19 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             except Exception as e:
                 logger.error('If you are using Studio, you do not have access to self.runtime.get_real_user')
         else:
-        # If an invitation has been received, try fetch the results, ideally this should happen when the webhook is  POSTed to
+        # If an invitation has been received,
+        # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
                 result = self.get_genesys_test_result()
-                
-                self.result_json = result
-                if result.status_code == requests.codes.ok:
+                print result.status_code, type(result.status_code)
+                if result.status_code == 200:
                     self.test_completed = True
             except Exception as e:
                 logger.error(str(e))
         
         calculated_score = self.calculate_score()
         self.publish_grade(score=calculated_score)
-        print "I AM PUBLISHING THE GRADE", self.result_json
+        print "I AM PUBLISHING THE GRADE", self.test_completed
         context = {
             "src_url": self.invitation_url,
             "display_name": self.display_name,
