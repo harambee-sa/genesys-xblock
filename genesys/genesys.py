@@ -102,13 +102,13 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     invitation_url = String(
         help="The invitation url used to access tests by respondents on Genesys",
         scope=Scope.user_state,
-        default=u""
+        default=None
     )
 
     respondent_id = Integer(
         help="The id of the respondent created/used for this invitation.",
         scope=Scope.user_state,
-        default=u""
+        default=None
     )
 
     invitation_id = Integer(
@@ -219,7 +219,10 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         if user.profile.gender is None:
             user.profile.gender = 'o'
             user.save()
+        if user.first_name is None:
+            user.first_name = user.profile.full_name[0]
 
+        
         params = {
             "respondentFirstName":user.first_name,
             "respondentFamilyName":user.last_name,
@@ -241,7 +244,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             data=self.api_invitation_params(user),
             
         )
-
+        print invitation.text
         if invitation.ok:
             self.invitation_id = invitation.json()['invitationId']
             self.respondent_id = invitation.json()['respondentId']
@@ -260,6 +263,25 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             headers=self.get_headers
         )
         return result
+
+    def extract_individual_test_scores(self, result):
+        cleaned_results = {}
+        result_dict = json.loads(result.text)
+        result_list = result_dict[0]['results']
+        for i in range(len(result_list)):
+            cleaned_results[result_list[i]['testId']] = result_list[i]['scales'][0]['raw']
+        total_scores = {
+                'VAC': 15.0 , 
+                'SRT2': 30.0, 
+                'MRT2': 45.0,
+            }
+        final_scores = {
+             'VAC': (cleaned_results['VAC'], total_scores['VAC']),
+             'SRT2': (cleaned_results['SRT2'], total_scores['SRT2']),
+             'MRT2': (cleaned_results['MRT2'], total_scores['MRT2'])
+        }
+        return final_scores
+
 
     # TO-DO: change this view to display your data your own way.
     def student_view(self, context=None):
@@ -280,15 +302,14 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
                 result = self.get_genesys_test_result()
-                print result.status_code, type(result.status_code)
+                individual_scores = self.extract_individual_test_scores(result)
                 if result.status_code == 200:
                     self.test_completed = True
             except Exception as e:
                 logger.error(str(e))
         
-        calculated_score = self.calculate_score()
+        calculated_score =  self.extract_individual_test_scores(result)
         self.publish_grade(score=calculated_score)
-        print "I AM PUBLISHING THE GRADE", self.test_completed
         context = {
             "src_url": self.invitation_url,
             "display_name": self.display_name,
