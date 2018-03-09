@@ -81,7 +81,21 @@
               </div>
             {% elif field.type == 'generic' or field.type == 'list' or field.type == 'set' %}
               {# Show a textarea so we can edit it as a JSON string #}
-              <textarea class="field-data-control" data-field-name="{{field.name}}" id="xb-field-edit-{{field.name}}" rows=5 cols=70>{{field.value}}</textarea>
+              <div>
+                <div id='TextBoxesGroup'>
+                    {% for item1, item2 in test_id_list %}
+                    <div id="TextBoxDiv{{forloop.counter}}">
+                      <div class="genesys-test-list-item">
+                        <input type="text" id="genesys-testId{{forloop.counter}}" value="{{item1}}"/>
+                        <input type="text" id="genesys-maxScore{{forloop.counter}}" value="{{item2}}"/>
+                        <button type="button" class="remove" style="padding: 8px 10px;">-</button>
+                      </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="add" id="add-btn" style="margin-top: 10px;">+ Add Test Id and score</button>
+              </div>
+             
             {% else %}
               Unsupported field type. This setting cannot be edited.
             {% endif %}

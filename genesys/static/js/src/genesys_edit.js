@@ -139,10 +139,76 @@ function StudioEditableXBlockMixin(runtime, element, data) {
         });
     };
 
-    $('.save-button', element).bind('click', function(e) {
+
+    $(function ($) {
+
+        // Count all the number of items in the Xblock list
+        var counter = 0;
+        $(element).find('.genesys-test-list-item').each(function (i) {
+           counter++;
+        });
+
+        // Add more XBlocks
+
+        $("#add-btn").on('click', function () {
+            var newTextBoxDiv = $(document.createElement('div')).attr("id", 'TextBoxDiv' + (counter+1));
+            newTextBoxDiv.append(
+                '<div class="genesys-test-list-item">'+
+                '<input type="text"' + '" id="genesys-testId' + (counter+1) + '" value="" />' +
+                '<input type="text"' + '" id="genesys-maxScore' + (counter+1) + '" value="" />' +
+                '<button type="button" class="remove" style="padding: 8px 10px;">-</button>' +
+                '</div>'
+            );
+
+            newTextBoxDiv.on('click', '.remove', function (e) {
+
+                var target = $(e.target);
+                var parent = target.parent();
+                parent.hide("fast", function() {
+                    var grandparent = $(this).parent();
+                    $(this).remove()
+                    grandparent.remove();
+                });
+            });
+            newTextBoxDiv.appendTo("#TextBoxesGroup");
+            counter++;
+        });
+    });
+
+
+    $(".remove").on('click', function (e) {
+
+        var target = $(e.target);
+        var parent = target.parent();
+
+        parent.hide("fast", function() {
+            var grandparent = $(this).parent();
+            $(this).remove()
+            grandparent.remove();
+        });
+
+    });
+
+
+        $('.save-button', element).bind('click', function(e) {
         e.preventDefault();
         var values = {};
         var notSet = []; // List of field names that should be set to default values
+        var testList = [];
+
+        $(element).find('.genesys-test-list-item').each(function (i) { //Add XBlock-list to fields array
+            var testId, testScore;
+            $(this).find('input,select').each(function(index, value) {
+                if (index == 0) {
+                    testId = $(this).val();
+                }
+                else if (index == 1) {
+                    testScore = $(this).val();
+                }
+            })
+             testList.push([testId, testScore])
+        });
+
         for (var i in fields) {
             var field = fields[i];
             if (field.isSet()) {
@@ -156,6 +222,7 @@ function StudioEditableXBlockMixin(runtime, element, data) {
                 field.removeEditor();
             }
         }
+        values['test_id_list'] = testList; //Add XBlock-list to fields array
         studio_submit({values: values, defaults: notSet});
     });
 

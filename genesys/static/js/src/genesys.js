@@ -5,6 +5,7 @@ function GenesysXBlock(runtime, element) {
 
 
   $('.genesys-test-link', element).click(function(eventObject) {
+    localStorage.setItem("started_genesys", true);
     $.ajax({
         type: "POST",
         url: handlerUrl,

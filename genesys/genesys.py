@@ -154,10 +154,18 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=False
     )
 
+    test_id_list = List(
+        display_name="Genesys Test ID's and Scores",
+        help="Test ID's of the Genesys test you wish to include in Xblock.",
+        allow_reset=False,
+        scope=Scope.settings
+    )
 
-    score = ScoreField(help="Dictionary with the current student score", scope=Scope.user_state, enforce_type=False)
 
-    editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date',)
+
+    score = JSONField(help="Dictionary with the current student score", scope=Scope.user_state)
+
+    editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date', 'test_id_list', )
 
     has_score = True
 
@@ -280,6 +288,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
              'SRT2': (cleaned_results['SRT2'], total_scores['SRT2']),
              'MRT2': (cleaned_results['MRT2'], total_scores['MRT2'])
         }
+
+        self.score = final_scores
+
         return final_scores
 
 
@@ -305,11 +316,16 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 individual_scores = self.extract_individual_test_scores(result)
                 if result.status_code == 200:
                     self.test_completed = True
+                    calculated_score =  self.extract_individual_test_scores(result)
+                    self.score = calculated_score
             except Exception as e:
                 logger.error(str(e))
+
+        # Need to publish each score individually, how do we do this
         
-        calculated_score =  self.extract_individual_test_scores(result)
-        self.publish_grade(score=calculated_score)
+        # calculated_score =  self.extract_individual_test_scores(result)
+        # self.score = calculated_score
+        #self.publish_grade(score=calculated_score)
         context = {
             "src_url": self.invitation_url,
             "display_name": self.display_name,
@@ -332,7 +348,11 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Render a form for editing this XBlock
         """
         frag = Fragment()
-        context = {'fields': []}
+        context = {
+            'fields': [],
+            'test_id_list': self.test_id_list,
+
+        }
         
         # Build a list of all the fields that can be edited:
         for field_name in self.editable_fields:
