@@ -286,6 +286,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         result_dict = json.loads(result.text)
         result_list = result_dict[0]['results']
         earned_test_score = 0.0
+
+        # Total the test score
         for i in range(len(result_list)):
             earned_test_score += result_list[i]['scales'][0]['raw']
         
@@ -322,7 +324,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
                 result = self.get_genesys_test_result()
-                individual_scores = self.extract_individual_test_scores(result)
+                print result
+                individual_scores = self.extract_earned_test_scores(result)
                 if result.status_code == 200:
                     self.test_completed = True
                     calculated_score = self.calculate_score(result)
