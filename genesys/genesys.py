@@ -303,11 +303,12 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         for i in range(len(self.test_id_list)):
             individual_test_scores[self.test_id_list[i][0]] = float(self.test_id_list[i][1])
 
-        final_scores = {
-             'VAC': (cleaned_results['VAC'], individual_test_scores['VAC']),
-             'SRT2': (cleaned_results['SRT2'], individual_test_scores['SRT2']),
-             'MRT2': (cleaned_results['MRT2'], individual_test_scores['MRT2'])
-        }
+
+        final_scores = {}
+        for key in cleaned_results:
+            final_scores = {
+                str(key): (cleaned_results[key], individual_scores[key])
+            }
 
         return final_scores
 
