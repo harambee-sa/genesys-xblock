@@ -355,13 +355,15 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                     individual_scores = self.extract_earned_test_scores(result)
                     calculated_total_score = self.calculate_score(result)
                     self.publish_grade(score=calculated_total_score)
+                else:
+                    logger.warn('The Genesys API could not retrieve the results. Error: {}'.format(result.text))
             except Exception as e:
                 logger.error(str(e))
        
 
 
         context = {
-            "invitation_successful": True,
+            "invitation_successful": self.invitation_successful,
             "src_url": self.invitation_url,
             "display_name": self.display_name,
             "instruction": self.instruction,
