@@ -305,10 +305,17 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
 
         final_scores = {}
-        for key in cleaned_results:
-            final_scores = {
-                str(key): (cleaned_results[key], individual_test_scores[key])
-            }
+        for key in cleaned_results.keys():
+            try:
+                final_scores = {
+                    str(key): (cleaned_results[key], individual_test_scores[key])
+                }
+            except KeyError as e:
+                logger.error(str(e))
+                final_scores = {
+                    str(key): 'Test ID does not exist in results.'
+                }
+
 
         return final_scores
 
@@ -348,6 +355,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 if result.status_code == 200:
                     self.test_completed = True
                     self.score = self.get_individual_test_scores(result)
+                    print self.score
                     individual_scores = self.extract_earned_test_scores(result)
                     calculated_total_score = self.calculate_score(result)
                     self.publish_grade(score=calculated_total_score)
