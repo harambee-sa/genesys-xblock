@@ -1,5 +1,7 @@
 <div class="genesys_xblock" data-display-name="{{display_name}}">
-    {% if not completed and not test_started%}
+	{% if not invitation_successful%}
+		<p>There was an error trying to access the test. Please make sure you have filled in your First and Last names in your Profile or contact your adminstator.</p>
+    {% elif not completed and not test_started%}
         <p>{{instruction}}</p>
         <a class="genesys-test-link" href="{{src_url}}">{{start_now}}</a>
     {% elif test_started and not completed%}

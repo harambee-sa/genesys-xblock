@@ -150,6 +150,11 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=False
     )
 
+    invitation_successful = Boolean(
+        scope=Scope.user_state,
+        default=False
+    )
+
     test_completed= Boolean(
         scope=Scope.user_state,
         default=False
@@ -164,7 +169,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
 
 
-    score = ScoreField(help="Dictionary with the current student score", scope=Scope.user_state)
+    score = JSONField(help="Dictionary with the current student score", scope=Scope.user_state)
 
     editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date', 'test_id_list', )
 
@@ -228,7 +233,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         if user.profile.gender is None:
             user.profile.gender = 'o'
             user.save()
-        if user.first_name is None:
+        if user.first_name is None or user.last_name is None:
             user.first_name = user.profile.name.split(' ')[0]
             user.last_name = user.profile.name.split(' ')[-1]
             user.save()
@@ -255,17 +260,21 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             data=self.api_invitation_params(user),
             
         )
-        print invitation.text
+        
         if invitation.ok:
             self.invitation_id = invitation.json()['invitationId']
             self.respondent_id = invitation.json()['respondentId']
             self.invitation_url = invitation.json()['invitationUrl']
 
-        return {
-            'invitation_id': self.invitation_id,
-            'respondent_id': self.respondent_id,
-            'invitation_url': self.invitation_url
-        }
+            self.invitation_successful = True
+            return {
+                'invitation_id': self.invitation_id,
+                'respondent_id': self.respondent_id,
+                'invitation_url': self.invitation_url
+            }
+        else:
+            logger.error('There was an error with the Genesys API. The error was: {}'.format(str(invitation.text)))
+            return "There was an error."
 
     def get_genesys_test_result(self):
 
@@ -283,6 +292,27 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
         return total_test_score
 
+    def get_individual_test_scores(self, result):
+
+        individual_test_scores = {}
+        result_dict = json.loads(result.text)
+        result_list = result_dict[0]['results']
+
+        for i in range(len(result_list)):
+            cleaned_results[result_list[i]['testId']] = result_list[i]['scales'][0]['raw']
+
+        for i in range(len(self.test_id_list)):
+            individual_test_scores[self.test_id_list[i][0]] = float(self.test_id_list[i][1])
+
+        final_scores = {
+             'VAC': (cleaned_results['VAC'], individual_test_scores['VAC']),
+             'SRT2': (cleaned_results['SRT2'], individual_test_scores['SRT2']),
+             'MRT2': (cleaned_results['MRT2'], individual_test_scores['MRT2'])
+        }
+
+        return final_scores
+
+
     def extract_earned_test_scores(self, result):
         cleaned_results = {}
         result_dict = json.loads(result.text)
@@ -292,17 +322,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # Total the test score
         for i in range(len(result_list)):
             earned_test_score += result_list[i]['scales'][0]['raw']
-        
-        # total_scores = {
-        #         'VAC': 15.0 , 
-        #         'SRT2': 30.0, 
-        #         'MRT2': 45.0,
-        #     }
-        # final_scores = {
-        #      'VAC': (cleaned_results['VAC'], total_scores['VAC']),
-        #      'SRT2': (cleaned_results['SRT2'], total_scores['SRT2']),
-        #      'MRT2': (cleaned_results['MRT2'], total_scores['MRT2'])
-        # }
 
         return earned_test_score
 
@@ -315,6 +334,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         """
 
         # If no invitation has been received, call Genesys invitations endpoint
+        invitation_successful = False
         if self.respondent_id is None:
             try:
                 user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
@@ -326,16 +346,17 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
                 result = self.get_genesys_test_result()
-                individual_scores = self.extract_earned_test_scores(result)
                 if result.status_code == 200:
                     self.test_completed = True
-                    calculated_score = self.calculate_score(result)
-                    self.score = calculated_score
-                    self.publish_grade(score=calculated_score)
+                    individual_scores = self.extract_earned_test_scores(result)
+                    calculated_total_score = self.calculate_score(result)
+                    self.publish_grade(score=calculated_total_score)
             except Exception as e:
                 logger.error(str(e))
+        print invitation_successful
 
         context = {
+            "invitation_successful": self.invitation_successful,
             "src_url": self.invitation_url,
             "display_name": self.display_name,
             "instruction": self.instruction,
