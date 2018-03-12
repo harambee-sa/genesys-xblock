@@ -307,7 +307,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         final_scores = {}
         for key in cleaned_results:
             final_scores = {
-                str(key): (cleaned_results[key], individual_scores[key])
+                str(key): (cleaned_results[key], individual_test_scores[key])
             }
 
         return final_scores
