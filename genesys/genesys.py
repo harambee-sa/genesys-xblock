@@ -303,8 +303,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         for i in range(len(self.test_id_list)):
             individual_test_scores[self.test_id_list[i][0]] = float(self.test_id_list[i][1])
 
-        print cleaned_results
-        print individual_test_scores
         final_scores = {}
         for key in cleaned_results.keys():
             try:
@@ -350,8 +348,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 result = self.get_genesys_test_result()
                 if result.status_code == 200:
                     self.test_completed = True
+                    self.invitation_successful = True
                     self.score = self.get_individual_test_scores(result)
-                    print self.score
                     individual_scores = self.extract_earned_test_scores(result)
                     calculated_total_score = self.calculate_score(result)
                     self.publish_grade(score=calculated_total_score)
@@ -463,9 +461,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         '''
         This is a XBlock json handler for the async pdf download
         '''
-        print data
+        
         self.test_started = True
-        print self.test_started
         return {"started": True}
 
     # TO-DO: change this to create the scenarios you'd like to see in the
