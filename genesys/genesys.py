@@ -24,49 +24,6 @@ from xblockutils.publish_event import PublishEventMixin
 logger = logging.getLogger(__name__)
 loader = ResourceLoader(__name__)
 
-class ScoreField(JSONField):
-    """
-    Field for blocks that need to store a Score. XBlocks that implement
-    the ScorableXBlockMixin may need to store their score separately
-    from their problem state, specifically for use in staff override
-    of problem scores.
-    """
-    MUTABLE = False
-
-    def from_json(self, value):
-        if value is None:
-            return value
-        if isinstance(value, Score):
-            return value
-
-        if set(value) != {'raw_earned', 'raw_possible'}:
-            raise TypeError('Scores must contain only a raw earned and raw possible value. Got {}'.format(
-                set(value)
-            ))
-
-        raw_earned = value['raw_earned']
-        raw_possible = value['raw_possible']
-
-        if raw_possible < 0:
-            raise ValueError(
-                'Error deserializing field of type {0}: Expected a positive number for raw_possible, got {1}.'.format(
-                    self.display_name,
-                    raw_possible,
-                )
-            )
-
-        if not (0 <= raw_earned <= raw_possible):
-            raise ValueError(
-                'Error deserializing field of type {0}: Expected raw_earned between 0 and {1}, got {2}.'.format(
-                    self.display_name,
-                    raw_possible,
-                    raw_earned
-                )
-            )
-
-        return Score(raw_earned, raw_possible)
-
-    enforce_type = from_json
 
 @XBlock.needs('settings')
 @XBlock.wants('user')
@@ -272,26 +229,34 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         )
         return result
 
-    def extract_individual_test_scores(self, result):
+    def get_test_total(self):
+
+        total_test_score = 0.0
+        for test_score in self.test_id_list.values():
+            total_test_score += test_score
+
+        return total_test_score
+
+    def extract_earned_test_scores(self, result):
         cleaned_results = {}
         result_dict = json.loads(result.text)
         result_list = result_dict[0]['results']
+        earned_test_score = 0.0
         for i in range(len(result_list)):
-            cleaned_results[result_list[i]['testId']] = result_list[i]['scales'][0]['raw']
-        total_scores = {
-                'VAC': 15.0 , 
-                'SRT2': 30.0, 
-                'MRT2': 45.0,
-            }
-        final_scores = {
-             'VAC': (cleaned_results['VAC'], total_scores['VAC']),
-             'SRT2': (cleaned_results['SRT2'], total_scores['SRT2']),
-             'MRT2': (cleaned_results['MRT2'], total_scores['MRT2'])
-        }
+            earned_test_score += result_list[i]['scales'][0]['raw']
+        
+        # total_scores = {
+        #         'VAC': 15.0 , 
+        #         'SRT2': 30.0, 
+        #         'MRT2': 45.0,
+        #     }
+        # final_scores = {
+        #      'VAC': (cleaned_results['VAC'], total_scores['VAC']),
+        #      'SRT2': (cleaned_results['SRT2'], total_scores['SRT2']),
+        #      'MRT2': (cleaned_results['MRT2'], total_scores['MRT2'])
+        # }
 
-        self.score = final_scores
-
-        return final_scores
+        return earned_test_score
 
 
     # TO-DO: change this view to display your data your own way.
@@ -321,11 +286,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             except Exception as e:
                 logger.error(str(e))
 
-        # Need to publish each score individually, how do we do this
-        
-        # calculated_score =  self.extract_individual_test_scores(result)
-        # self.score = calculated_score
-        #self.publish_grade(score=calculated_score)
+        calculated_score = self.calculate_score(result)
+
+        self.publish_grade(score=calculated_score)
         context = {
             "src_url": self.invitation_url,
             "display_name": self.display_name,
@@ -375,24 +338,16 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         data = pkg_resources.resource_string(__name__, path)
         return data.decode("utf8")
 
-    def set_score(self, score):
-        """
-        Sets the internal score for the problem. This is not derived directly
-        from the internal LCP in keeping with the ScorableXBlock spec.
-        """
-        earned = 1
-        possible = 19
-        return Score(raw_earned=earned, raw_possible=possible)
 
-    def calculate_score(self):
+    def calculate_score(self, result):
         """
         Calculate a new raw score based on the state of the problem.
         This method should not modify the state of the XBlock.
         Returns:
             Score(raw_earned=float, raw_possible=float)
         """
-        earned = 1
-        possible = 18
+        earned =  self.extract_earned_test_scores(result)
+        possible = self.get_test_total()
         return Score(raw_earned=earned, raw_possible=possible)
 
     def publish_grade(self, score=None):
@@ -422,19 +377,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         self.test_started = True
         print self.test_started
         return {"started": True}
-
-    # TO-DO: change this handler to perform your own actions.  You may need more
-    # than one handler, or you may not need any handlers at all.
-    @XBlock.json_handler
-    def increment_count(self, data, suffix=''):
-        """
-        An example handler, which increments the data.
-        """
-        # Just to show data coming in...
-        assert data['hello'] == 'world'
-
-        self.count += 1
-        return {"count": self.count}
 
     # TO-DO: change this to create the scenarios you'd like to see in the
     # workbench while developing your XBlock.
