@@ -334,7 +334,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         """
 
         # If no invitation has been received, call Genesys invitations endpoint
-        invitation_successful = False
         if self.respondent_id is None:
             try:
                 user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
@@ -432,8 +431,13 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         """
         Publishes the student's current grade to the system as an event
         """
-        if not score:
-            score = Score(raw_earned=2, raw_possible=987)
+        if score is None
+            try:
+                result = self.get_genesys_test_result()
+                score = Score(earned=self.extract_earned_test_scores(result), possible=self.get_test_total())
+            except Exception as e:
+                logger.error(str(e))
+
         self.runtime.publish(
             self,
             'grade',
