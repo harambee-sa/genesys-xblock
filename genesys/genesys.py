@@ -303,20 +303,19 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         for i in range(len(self.test_id_list)):
             individual_test_scores[self.test_id_list[i][0]] = float(self.test_id_list[i][1])
 
-
+        print cleaned_results
+        print individual_test_scores
         final_scores = {}
         for key in cleaned_results.keys():
             try:
-                final_scores = {
-                    str(key): (cleaned_results[key], individual_test_scores[key])
-                }
+                final_scores[str(key)] = (cleaned_results[key], individual_test_scores[key])
             except KeyError as e:
                 logger.error(str(e))
                 final_scores = {
                     str(key): 'Test ID does not exist in results.'
                 }
 
-
+        print final_scores
         return final_scores
 
 
