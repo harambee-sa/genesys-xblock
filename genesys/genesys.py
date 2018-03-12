@@ -311,11 +311,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 final_scores[str(key)] = (cleaned_results[key], individual_test_scores[key])
             except KeyError as e:
                 logger.error(str(e))
-                final_scores = {
-                    str(key): 'Test ID does not exist in results.'
-                }
+                final_scores[str(key)] = 'Test ID {} does not exist in results.'.format(str(key))
 
-        print final_scores
         return final_scores
 
 
