@@ -167,8 +167,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         scope=Scope.settings
     )
 
-
-
     score = JSONField(help="Dictionary with the current student score", scope=Scope.user_state)
 
     editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date', 'test_id_list', )
@@ -295,6 +293,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     def get_individual_test_scores(self, result):
 
         individual_test_scores = {}
+        cleaned_results = {}
         result_dict = json.loads(result.text)
         result_list = result_dict[0]['results']
 
@@ -347,15 +346,17 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 result = self.get_genesys_test_result()
                 if result.status_code == 200:
                     self.test_completed = True
+                    self.score = self.get_individual_test_scores(result)
                     individual_scores = self.extract_earned_test_scores(result)
                     calculated_total_score = self.calculate_score(result)
                     self.publish_grade(score=calculated_total_score)
             except Exception as e:
                 logger.error(str(e))
-        print invitation_successful
+       
+
 
         context = {
-            "invitation_successful": self.invitation_successful,
+            "invitation_successful": True,
             "src_url": self.invitation_url,
             "display_name": self.display_name,
             "instruction": self.instruction,
@@ -431,7 +432,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         """
         Publishes the student's current grade to the system as an event
         """
-        if score is None
+        if score is None:
             try:
                 result = self.get_genesys_test_result()
                 score = Score(earned=self.extract_earned_test_scores(result), possible=self.get_test_total())

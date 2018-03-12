@@ -3,12 +3,12 @@
 		<p>There was an error trying to access the test. Please contact your adminstator.</p>
     {% elif not completed and not test_started%}
         <p>{{instruction}}</p>
-        <a class="genesys-test-link" href="{{src_url}}">{{start_now}}</a>
+        <a class="genesys-test-link" target="_blank" href="{{src_url}}">{{start_now}}</a>
     {% elif test_started and not completed%}
         <p>Make sure you have completed all three tests.</p>
-        <a class="genesys-test-link" href="{{src_url}}">Continue to tests.</a>
+        <a class="genesys-test-link" target="_blank" href="{{src_url}}">Continue to tests.</a>
     {% elif completed%}
-        You have completed all your tests. They have been graded. 
+        You have completed all your tests. 
     {% endif %}
     
 </div>
