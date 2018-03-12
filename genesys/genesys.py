@@ -388,11 +388,11 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         for field_name in self.editable_fields:
             field = self.fields[field_name]
             if field.scope not in (Scope.content, Scope.settings):
-            logger.error(
-                "Only Scope.content or Scope.settings fields can be used with "
-                "StudioEditableXBlockMixin. Other scopes are for user-specific data and are "
-                "not generally created/configured by content authors in Studio."
-            )
+                    logger.error(
+                    "Only Scope.content or Scope.settings fields can be used with "
+                    "StudioEditableXBlockMixin. Other scopes are for user-specific data and are "
+                    "not generally created/configured by content authors in Studio."
+                )
             field_info = self._make_field_info(field_name, field)
             if field_info is not None:
                 context["fields"].append(field_info)
