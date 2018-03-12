@@ -16,4 +16,5 @@ class GenesysData(models.Model):
 	respondent_id =  models.CharField(max_length=32, db_index=True)
 	invitation_id = models.CharField(max_length=32, db_index=True)
 	class Meta:
+		app_label = 'genesys'
 		unique_together = ["respondent_id", "invitation_id"]

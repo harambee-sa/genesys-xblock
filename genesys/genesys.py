@@ -229,7 +229,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             user.profile.gender = 'o'
             user.save()
         if user.first_name is None:
-            user.first_name = user.profile.full_name[0]
+            user.first_name = user.profile.name.split(' ')[0]
+            user.last_name = user.profile.name.split(' ')[-1]
+            user.save()
 
         
         params = {
