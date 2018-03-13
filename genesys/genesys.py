@@ -263,8 +263,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             self.invitation_id = invitation.json()['invitationId']
             self.respondent_id = invitation.json()['respondentId']
             self.invitation_url = invitation.json()['invitationUrl']
-
             self.invitation_successful = True
+
             return {
                 'invitation_id': self.invitation_id,
                 'respondent_id': self.respondent_id,
@@ -340,7 +340,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
                 invitation = self.get_genesys_invitation(user)
             except Exception as e:
-                logger.error('If you are using Studio, you do not have access to self.runtime.get_real_user')
+                logger.error(str(e))
         else:
         # If an invitation has been received,
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
@@ -357,8 +357,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                     logger.warn('The Genesys API could not retrieve the results. Error: {}'.format(result.text))
             except Exception as e:
                 logger.error(str(e))
-       
-
 
         context = {
             "invitation_successful": self.invitation_successful,
