@@ -1,28 +1,24 @@
 
 
-from .models import GenesysData
-from django.http import HttpResponse, HttpResponseForbidden
+
 
 import requests  
 import json
 import urlparse
-
-
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from .genesys import GenesysXBlock
+from django.http import HttpResponse, HttpResponseForbidden
+from .models import GenesysData
 
 @csrf_exempt
 def genesys_result_receiver(request):
 
 	if request.method == 'POST':
-		
 		referer = request.META.get('HTTP_REFERER')
     	referer_parts = urlparse.urlparse(referer) if referer else None
     	referer_hostname = referer_parts.hostname if referer_parts is not None else None
-
     	domain_is_whitelisted = (
-        	referer_hostname in ['localhost:8000']
+        	referer_hostname in getattr(settings, 'CORS_ORIGIN_WHITELIST', [])
     	)
     	if not domain_is_whitelisted:
     		return HttpResponseForbidden('Permission denied.')
@@ -35,6 +31,4 @@ def genesys_result_receiver(request):
 				respondent_id = received_json_data['respondantId'],
 				invitation_id = received_json_data['invitationId'],
 			)
-
-
 	return HttpResponse()

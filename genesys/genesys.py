@@ -95,9 +95,16 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
     start_now = String(
         display_name="Start Message",
-        help="The test for the hyperlink",
+        help="The text value of the hyperlink",
         scope=Scope.settings,
         default=u"Start test now!"
+    )
+
+    completed_message = String(
+        display_name="Completed Message",
+        help="The message for completing the test",
+        scope=Scope.settings,
+        default=u"You have completed all the tests."
     )
 
     invitation_url = String(
@@ -169,7 +176,16 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
     score = JSONField(help="Dictionary with the current student score", scope=Scope.user_state)
 
-    editable_fields = ('display_name', 'questionnaire_id', 'external_id', 'expiry_date', 'test_id_list', )
+    editable_fields = (
+        'display_name',
+        'questionnaire_id',
+        'external_id',
+        'expiry_date',
+        'test_id_list',
+        'instruction',
+        'start_now',
+        'completed_message',
+    )
 
     has_score = True
 
@@ -335,7 +351,12 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         """
 
         # If no invitation has been received, call Genesys invitations endpoint
-        if self.respondent_id is None:
+        studio_runtime = False
+
+        if settings.ROOT_URLCONF == 'cms.urls':
+            studio_runtime = True
+
+        elif self.respondent_id is None:
             try:
                 user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
                 invitation = self.get_genesys_invitation(user)
@@ -358,6 +379,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             except Exception as e:
                 logger.error(str(e))
 
+        
         context = {
             "invitation_successful": self.invitation_successful,
             "src_url": self.invitation_url,
@@ -365,7 +387,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "instruction": self.instruction,
             "start_now": self.start_now,
             "completed": self.test_completed,
-            "test_started": self.test_started
+            "test_started": self.test_started,
+            "studio_runtime": studio_runtime,
+            "completed_message": self.completed_message,
         }
 
 

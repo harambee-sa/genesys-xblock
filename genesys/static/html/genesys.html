@@ -1,14 +1,18 @@
 <div class="genesys_xblock" data-display-name="{{display_name}}">
-	{% if not invitation_successful%}
+
+	{% if studio_runtime %}
+		<p>{{instruction}}</p>
+		<a class="genesys-test-link" target="_blank">The invitation URL is only visible via LMS.</a>
+	{% elif not invitation_successful%}
 		<p>There was an error trying to access the test. Please contact your adminstator.</p>
     {% elif not completed and not test_started%}
         <p>{{instruction}}</p>
         <a class="genesys-test-link" target="_blank" href="{{src_url}}">{{start_now}}</a>
     {% elif test_started and not completed%}
-        <p>YOu have started your tests. Make sure you have completed all three tests.</p>
+        <p>You have started your tests. Make sure you have completed all three tests.</p>
         <a class="genesys-test-link" target="_blank" href="{{src_url}}">Continue to tests.</a>
     {% elif completed%}
-        You have completed all your tests. 
+        <p>{{completed_message}}</p>
     {% endif %}
     
 </div>
