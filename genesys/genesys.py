@@ -251,7 +251,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 'invitation_url': self.invitation_url
             }
         else:
-            raise Exception('There was an error with the Genesys API. {}'.format(str(invitation.text)))
+            raise Exception('There was an error with the Genesys invitations endpoint. {}'.format(str(invitation.text)))
 
         
     def get_genesys_test_result(self):
@@ -263,7 +263,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             url=self.api_results_url,
             headers=self.get_headers
         )
-        
+
         if result.ok:
             self.test_completed = True
             self.invitation_successful = True
@@ -274,7 +274,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
         else:
-            raise Exception('The was an error retrieving results from Genesys. {}'.format(str(results.text)))
+            raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(results.text)))
 
     def get_test_total(self):
         """
