@@ -195,11 +195,17 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
     @property
     def get_headers(self):
+        """
+        """
         
         return self.get_xblock_settings().get('GENESYS_HEADERS', '')
 
     def api_invitation_params(self, user):
-
+        """
+        Define the Genesys invitation params sent to the Genesys invitations
+        endpoint
+        """
+        # Check the user has a first and last name, and gender defined in profile
         if user.profile.gender is None:
             user.profile.gender = 'o'
             user.save()
@@ -207,7 +213,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             user.first_name = user.profile.name.split(' ')[0]
             user.last_name = user.profile.name.split(' ')[-1]
             user.save()
-
         
         params = {
             "respondentFirstName":user.first_name,
@@ -223,7 +228,10 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         return data
 
     def get_genesys_invitation(self, user):
-
+        """
+        This function sends a request to the Genesys invitations endpoint.
+        It raises an Exception is the request is not successful.
+        """
         invitation = requests.post(
             url=self.api_invitation_url,
             headers=self.get_headers,
@@ -247,15 +255,32 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
         
     def get_genesys_test_result(self):
-
+        """
+        Using the Genesys respondent ID, it checks for an fetches the respondents test results
+        using the Genesys results endpoint
+        """
         result = requests.get(
             url=self.api_results_url,
             headers=self.get_headers
         )
-        return result
+        
+        if result.ok:
+            self.test_completed = True
+            self.invitation_successful = True
+            # set the score in the user state
+            self.score = self.get_individual_test_scores(result)
+            # publish the raw_earned and raw_possible score
+            individual_scores = self.extract_earned_test_scores(result)
+            calculated_total_score = self.calculate_score(result)
+            self.publish_grade(score=calculated_total_score)
+        else:
+            raise Exception('The was an error retrieving results from Genesys. {}'.format(str(results.text)))
 
     def get_test_total(self):
-
+        """
+        Using the total scores for the tests specified in Studio settings, tally
+        up the sum of the test scores.
+        """
         total_test_score = 0.0
         for test_score in self.test_id_list:
             total_test_score += float(test_score[1])
@@ -263,7 +288,10 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         return total_test_score
 
     def get_individual_test_scores(self, result):
-
+        """
+        Using the result obtained from get_genesys_test_result(), clean up the
+        JSON and return a tidy dictionary for all the individual test results.
+        """
         individual_test_scores = {}
         cleaned_results = {}
         result_dict = json.loads(result.text)
@@ -287,6 +315,11 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
 
     def extract_earned_test_scores(self, result):
+        """
+        Using the result obtained from get_genesys_test_result(), clean up the
+        JSON and return the SUM of score earned for all tests specified in 
+        test_id_list
+        """
         cleaned_results = {}
         result_dict = json.loads(result.text)
         result_list = result_dict[0]['results']
@@ -322,15 +355,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
                 result = self.get_genesys_test_result()
-                if result.status_code == 200:
-                    self.test_completed = True
-                    self.invitation_successful = True
-                    self.score = self.get_individual_test_scores(result)
-                    individual_scores = self.extract_earned_test_scores(result)
-                    calculated_total_score = self.calculate_score(result)
-                    self.publish_grade(score=calculated_total_score)
-                else:
-                    logger.warn('The Genesys API could not retrieve the results. Error: {}'.format(result.text))
             except Exception as e:
                 logger.error(str(e))
 
