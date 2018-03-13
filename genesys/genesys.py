@@ -243,7 +243,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 'invitation_url': self.invitation_url
             }
         else:
-            raise Exception(str(invitation.text))
+            raise Exception('There was an error with the Genesys API. {}'.format(str(invitation.text)))
 
         
     def get_genesys_test_result(self):
