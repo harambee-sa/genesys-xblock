@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from student.models import UserProfile
 from xblock.fields import Scope, Integer, String, Float, List, Boolean, ScopeIds
 from xblock.fields import JSONField
+from xblock.validation import ValidationMessage
 from xblockutils.resources import ResourceLoader
 from xblock.fragment import Fragment
 from xblock.scorable import ScorableXBlockMixin, Score
@@ -87,7 +88,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "Genesys Questionnaire ID needed to access test"
         ),
         scope=Scope.settings,
-        default=''
+        default=None
     )
     
     external_id = String(
@@ -96,7 +97,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "Genesys external ID needed to access test"
         ),
         scope=Scope.settings,
-        default=''
+        default=None
     )
 
     expiry_date = String(
@@ -144,6 +145,34 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     )
 
     has_score = True
+
+    def validate_field_data(self, validation, data):
+        """
+        Validate this block's field data. We are validating that the chosen
+        freetextresponse xblocks ID's exist in the course
+        """
+        if len(data.test_id_list) == 0:
+            validation.add(
+                ValidationMessage(
+                    ValidationMessage.ERROR,
+                    u"Please specify Genesys Test ID's and Scores."
+                )
+            )
+        if data.external_id is None:
+            validation.add(
+                ValidationMessage(
+                    ValidationMessage.ERROR,
+                    u"Please specify an external ID."
+                )
+            )
+        if data.questionnaire_id is None:
+            validation.add(
+                ValidationMessage(
+                    ValidationMessage.ERROR,
+                    u"Please specify Questionnaire ID."
+                )
+            )
+
 
     @property
     def api_configuration_id(self):
@@ -274,7 +303,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
         else:
-            raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(results.text)))
+            raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
 
     def get_test_total(self):
         """
