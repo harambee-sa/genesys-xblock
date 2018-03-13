@@ -179,7 +179,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     @property
     def api_invitation_url(self):
 
-        return "{}/invitations/{}".format(
+        return "{}invitations/{}".format(
             self.api_base_url, 
             self.api_configuration_id
         )
@@ -230,22 +230,22 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             data=self.api_invitation_params(user),
             
         )
-        
+
         if invitation.ok:
             self.invitation_id = invitation.json()['invitationId']
             self.respondent_id = invitation.json()['respondentId']
             self.invitation_url = invitation.json()['invitationUrl']
             self.invitation_successful = True
-
+        
             return {
                 'invitation_id': self.invitation_id,
                 'respondent_id': self.respondent_id,
                 'invitation_url': self.invitation_url
             }
         else:
-            logger.error('There was an error with the Genesys API. The error was: {}'.format(str(invitation.text)))
-            return "There was an error."
+            raise Exception(str(invitation.text))
 
+        
     def get_genesys_test_result(self):
 
         result = requests.get(
@@ -276,9 +276,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             individual_test_scores[self.test_id_list[i][0]] = float(self.test_id_list[i][1])
 
         final_scores = {}
-        for key in cleaned_results.keys():
+        for key, value in cleaned_results.items():
             try:
-                final_scores[str(key)] = (cleaned_results[key], individual_test_scores[key])
+                final_scores[str(key)] = (value, individual_test_scores[key])
             except KeyError as e:
                 logger.error(str(e))
                 final_scores[str(key)] = 'Test ID {} does not exist in results.'.format(str(key))
@@ -306,12 +306,11 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         when viewing courses.
         """
 
-        # If no invitation has been received, call Genesys invitations endpoint
         studio_runtime = False
-
+        # Check if the runtime is cms or lms
         if settings.ROOT_URLCONF == 'cms.urls':
             studio_runtime = True
-
+        # If no invitation has been received, call Genesys invitations endpoint
         elif self.respondent_id is None:
             try:
                 user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
