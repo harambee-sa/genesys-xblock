@@ -374,9 +374,15 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         if settings.ROOT_URLCONF == 'cms.urls':
             studio_runtime = True
         # If no invitation has been received, call Genesys invitations endpoint
+        try:
+            user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
+            if user.first_name is None or user.last_name is None:
+                no_name = True
+        except Exception as e:
+            logger.error(str(e))
+
         elif self.respondent_id is None:
             try:
-                user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
                 invitation = self.get_genesys_invitation(user)
             except Exception as e:
                 logger.error(str(e))
@@ -388,8 +394,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             except Exception as e:
                 logger.error(str(e))
 
-        if user.first_name is None or user.last_name is None:
-            no_name = True
 
         student_account_url = reverse('account_settings')
 
