@@ -293,8 +293,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             url=self.api_results_url,
             headers=self.get_headers
         )
-        print "RESSSSSSSSSSSSSSss", result.text
-
+    
         if result.ok:
             self.test_completed = True
             self.invitation_successful = True
@@ -303,6 +302,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             # publish the raw_earned and raw_possible score
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
+            print "PUBLISHING", self.publish_grade(score=calculated_total_score)
         else:
             raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
 

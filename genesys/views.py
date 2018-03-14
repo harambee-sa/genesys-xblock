@@ -30,13 +30,13 @@ def genesys_result_receiver(request):
             received_json_data = json.loads(request.body)
             logger.info("The received data from Genesys: {}".format(received_json_data))
             try:
-            GenesysData.objects.create(
-                event_type = received_json_data['eventType'],
-                event_date = received_json_data['eventDate'],
-                configuration_id = received_json_data['configurationId'],
-                respondent_id = received_json_data['respondantId'],
-                invitation_id = received_json_data['invitationId'],
-            )
+                GenesysData.objects.create(
+                    event_type = received_json_data['eventType'],
+                    event_date = received_json_data['eventDate'],
+                    configuration_id = received_json_data['configurationId'],
+                    respondent_id = received_json_data['respondantId'],
+                    invitation_id = received_json_data['invitationId'],
+                )
             except IntegrityError:
                 HttpResponseForbidden('Permission denied.')
-    return HttpResponse()
+        return HttpResponse()
