@@ -18,6 +18,7 @@ from xblock.fragment import Fragment
 from xblock.scorable import ScorableXBlockMixin, Score
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from xblockutils.settings import XBlockWithSettingsMixin
@@ -367,7 +368,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         The primary view of the GenesysXBlock, shown to students
         when viewing courses.
         """
-
+        no_name = False
         studio_runtime = False
         # Check if the runtime is cms or lms
         if settings.ROOT_URLCONF == 'cms.urls':
@@ -387,8 +388,13 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             except Exception as e:
                 logger.error(str(e))
 
-        
+        if user.first_name is None or user.last_name is None:
+            no_name = True
+
+        student_account_url = reverse('account_settings')
+
         context = {
+            "no_name": no_name,
             "invitation_successful": self.invitation_successful,
             "src_url": self.invitation_url,
             "display_name": self.display_name,
@@ -398,6 +404,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "test_started": self.test_started,
             "studio_runtime": studio_runtime,
             "completed_message": self.completed_message,
+            "student_account_url": student_account_url,
         }
 
 
