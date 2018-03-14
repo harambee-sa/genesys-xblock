@@ -293,6 +293,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             url=self.api_results_url,
             headers=self.get_headers
         )
+        print "RESSSSSSSSSSSSSSss", result.text
 
         if result.ok:
             self.test_completed = True
@@ -300,7 +301,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             # set the score in the user state
             self.score = self.get_individual_test_scores(result)
             # publish the raw_earned and raw_possible score
-            individual_scores = self.extract_earned_test_scores(result)
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
         else:
@@ -376,13 +376,12 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # If no invitation has been received, call Genesys invitations endpoint
         try:
             user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
-            print type(user.first_name)
             if not user.first_name or not user.last_name:
                 no_name = True
         except Exception as e:
             logger.error(str(e))
 
-        if self.respondent_id is None:
+        if self.respondent_id is None and no_name is False:
             try:
                 invitation = self.get_genesys_invitation(user)
             except Exception as e:
@@ -391,6 +390,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # If an invitation has been received,
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
+                print "I AM HERE fetching "
                 result = self.get_genesys_test_result()
             except Exception as e:
                 logger.error(str(e))
@@ -458,10 +458,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Sets the internal score for the problem. This is not derived directly     
         from the internal LCP in keeping with the ScorableXBlock spec.        
         """ 
-        result = self.get_genesys_test_result()      
-        earned = self.extract_earned_test_scores(result)
-        possible = self.get_test_total() 
-        return Score(raw_earned=earned, raw_possible=possible)
+        pass
 
 
     def calculate_score(self, result):
@@ -480,11 +477,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Publishes the student's current grade to the system as an event
         """
         if score is None:
-            try:
-                result = self.get_genesys_test_result()
-                score = Score(earned=self.extract_earned_test_scores(result), possible=self.get_test_total())
-            except Exception as e:
-                logger.error(str(e))
+            score = Score(earned=0, possible=0)
 
         self.runtime.publish(
             self,

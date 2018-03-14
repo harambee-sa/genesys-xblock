@@ -29,6 +29,7 @@ def genesys_result_receiver(request):
         else:
             received_json_data = json.loads(request.body)
             logger.info("The received data from Genesys: {}".format(received_json_data))
+            try:
             GenesysData.objects.create(
                 event_type = received_json_data['eventType'],
                 event_date = received_json_data['eventDate'],
@@ -36,4 +37,6 @@ def genesys_result_receiver(request):
                 respondent_id = received_json_data['respondantId'],
                 invitation_id = received_json_data['invitationId'],
             )
+            except IntegrityError:
+                HttpResponseForbidden('Permission denied.')
     return HttpResponse()
