@@ -381,7 +381,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         except Exception as e:
             logger.error(str(e))
 
-        elif self.respondent_id is None:
+        if self.respondent_id is None:
             try:
                 invitation = self.get_genesys_invitation(user)
             except Exception as e:
