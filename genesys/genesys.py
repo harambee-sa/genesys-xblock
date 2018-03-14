@@ -302,7 +302,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             # publish the raw_earned and raw_possible score
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
-            print "PUBLISHING", self.publish_grade(score=calculated_total_score)
         else:
             raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
 
@@ -319,7 +318,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
     def get_individual_test_scores(self, result):
         """
-        Using the result obtained from get_genesys_test_result(), clean up the
+        Using the result obtained from get genesys_test_result(), clean up the
         JSON and return a tidy dictionary for all the individual test results.
         """
         individual_test_scores = {}
@@ -346,7 +345,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
     def extract_earned_test_scores(self, result):
         """
-        Using the result obtained from get_genesys_test_result(), clean up the
+        Using the result obtained from get genesys_test_result(), clean up the
         JSON and return the SUM of score earned for all tests specified in 
         test_id_list
         """
@@ -390,7 +389,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # If an invitation has been received,
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
-                print "I AM HERE fetching "
                 result = self.get_genesys_test_result()
             except Exception as e:
                 logger.error(str(e))

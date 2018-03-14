@@ -37,6 +37,8 @@ def genesys_result_receiver(request):
                     respondent_id = received_json_data['respondantId'],
                     invitation_id = received_json_data['invitationId'],
                 )
-            except IntegrityError:
+            except Exception as e:
+                logger.error(str(e))
                 HttpResponseForbidden('Permission denied.')
+
         return HttpResponse()
