@@ -385,13 +385,15 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 invitation = self.get_genesys_invitation(user)
             except Exception as e:
                 logger.error(str(e))
-        else:
+        elif not self.test_completed:
         # If an invitation has been received,
         # try fetch the results, ideally this should happen when the webhook is  POSTed to
             try:
                 result = self.get_genesys_test_result()
             except Exception as e:
                 logger.error(str(e))
+        else:
+            pass
 
 
         student_account_url = reverse('account_settings')
