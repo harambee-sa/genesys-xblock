@@ -286,7 +286,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 'respondent_id': self.respondent_id,
                 'invitation_url': self.invitation_url
             }
-        elif "Insufficient Credits for Request" in result.text:
+        elif "Insufficient Credits for Request" in invitation.text:
             self.insufficient_credit = True
             raise Exception('There was an error with the Genesys invitations endpoint. {}'.format(str(invitation.text)))
         else:
