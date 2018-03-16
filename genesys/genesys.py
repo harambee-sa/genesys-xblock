@@ -125,6 +125,12 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         default=False
     )
 
+    insufficient_credit= Boolean(
+        scope=Scope.user_state,
+        default=False
+    )
+
+
     test_id_list = List(
         display_name="Genesys Test ID's and Scores",
         help="Test ID's of the Genesys test you wish to include in Xblock.",
@@ -280,6 +286,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 'respondent_id': self.respondent_id,
                 'invitation_url': self.invitation_url
             }
+        elif "Insufficient Credits for Request" in result.text:
+            self.insufficient_credit = True
+            raise Exception('There was an error with the Genesys invitations endpoint. {}'.format(str(invitation.text)))
         else:
             raise Exception('There was an error with the Genesys invitations endpoint. {}'.format(str(invitation.text)))
 
@@ -302,6 +311,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             # publish the raw_earned and raw_possible score
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
+        elif "Insufficient Credits for Request" in result.text:
+            self.insufficient_credit = True
+            raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
         else:
             raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
 
@@ -395,7 +407,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         else:
             pass
 
-
+        bugs_email = getattr(settings, 'BUGS_EMAIL', '')
         student_account_url = reverse('account_settings')
 
         context = {
@@ -410,6 +422,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "studio_runtime": studio_runtime,
             "completed_message": self.completed_message,
             "student_account_url": student_account_url,
+            "bugs_email": bugs_email,
+            "insufficient_credit": self.insufficient_credit
         }
 
 
