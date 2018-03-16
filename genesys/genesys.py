@@ -491,7 +491,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Publishes the student's current grade to the system as an event
         """
         if score is None:
-            score = Score(earned=0, possible=0)
+            score = Score(earned=0, possible=90)
 
         self.runtime.publish(
             self,
