@@ -515,6 +515,22 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         self.test_started = True
         return {"started": True}
 
+    @XBlock.json_handler
+    def test_completed_handler(self, data, suffix=''):
+
+        '''
+        This is a XBlock json handler for the async pdf download
+        '''
+        
+        result = requests.get(
+            url=self.api_results_url,
+            headers=self.get_headers
+        )
+        if result.ok:
+            return {"completed": True}
+        else:
+            return {"completed": False}
+
     # TO-DO: change this to create the scenarios you'd like to see in the
     # workbench while developing your XBlock.
     @staticmethod
