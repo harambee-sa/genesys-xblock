@@ -311,7 +311,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             # publish the raw_earned and raw_possible score
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
-            self.runtime.render(self, student_view)
         elif "Insufficient Credits for Request" in result.text:
             self.insufficient_credit = True
             raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
