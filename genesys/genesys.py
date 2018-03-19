@@ -311,13 +311,14 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             # publish the raw_earned and raw_possible score
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
+            self.runtime.render(self, student_view)
         elif "Insufficient Credits for Request" in result.text:
             self.insufficient_credit = True
             raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
         else:
             raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
 
-    def get_test_total(self):
+    def max_score(self):
         """
         Using the total scores for the tests specified in Studio settings, tally
         up the sum of the test scores.
@@ -483,7 +484,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             Score(raw_earned=float, raw_possible=float)
         """
         earned =  self.extract_earned_test_scores(result)
-        possible = self.get_test_total()
+        possible = self.max_score()
         return Score(raw_earned=earned, raw_possible=possible)
 
     def publish_grade(self, score=None):
@@ -491,7 +492,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Publishes the student's current grade to the system as an event
         """
         if score is None:
-            score = Score(earned=0, possible=90)
+            score = Score(earned=0, possible=self.max_score())
 
         self.runtime.publish(
             self,
