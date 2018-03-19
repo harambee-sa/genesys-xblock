@@ -3,22 +3,6 @@ function GenesysXBlock(runtime, element) {
 
 	var handlerUrl = runtime.handlerUrl(element, 'test_started_handler');
     var completedUrl = runtime.handlerUrl(element, 'test_completed_handler');
-    // var isOnDiv = false;
-    // $('.genesys_xblock').mouseenter(function(){isOnDiv=true;});
-    // $('.genesys_xblock').mouseleave(function(){isOnDiv=false;});
-
-    function newTabOpened() {
-    // The user left this window (e.g opening another window)
-    // Do something
-        console.log('another tab was opened')
-    }
-
-    if (localStorage.getItem("test_result_received") != null) {
-        $("#" + xblockId).html(localStorage.getItem("student_answer_saved" + "_" + xblockId));
-    }
-
-    window.onblur = newTabOpened;
-    var checkedForResult = false;
 
     function backToPage() {
     // The user returned to the page, check if results are available
