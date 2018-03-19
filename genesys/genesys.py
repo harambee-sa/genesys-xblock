@@ -508,7 +508,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     def test_started_handler(self, data, suffix=''):
 
         '''
-        This is a XBlock json handler for the async pdf download
+        This is a XBlock json handler to store if the hyperlink to the Genesys
+        invitation url has been clicked
         '''
         
         self.test_started = True
@@ -518,7 +519,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     def test_completed_handler(self, data, suffix=''):
 
         '''
-        This is a XBlock json handler for the async pdf download
+        This is a XBlock json handler check if the results for Genesys tests are
+        available
         '''
         
         result = requests.get(
