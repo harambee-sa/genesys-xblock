@@ -13,10 +13,11 @@ function GenesysXBlock(runtime, element) {
                 url: completedUrl,
                 data: JSON.stringify({'started': true}),
                 success: function(data){
+                    console.log(data)
                     if (data['completed'] == true){
+                        localStorage.setItem("test_result_received", true)
                         var onlyUrl = location.href.replace(location.search,'');
                         window.location = onlyUrl;
-                        localStorage.setItem("test_result_received", true)
                         return false;
                     }
                 }
