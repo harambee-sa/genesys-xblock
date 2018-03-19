@@ -214,7 +214,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
     @property
     def api_invitation_url(self):
-
+        """
+        The Genesys Invitations endpoint
+        """
         return "{}invitations/{}".format(
             self.api_base_url, 
             self.api_configuration_id
@@ -222,7 +224,9 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
 
     @property
     def api_results_url(self):
-
+        """
+        The Genesys results endpoint
+        """
         return "{}/results/{}?respondentId={}".format(
             self.api_base_url, 
             self.api_configuration_id,
@@ -232,8 +236,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
     @property
     def get_headers(self):
         """
+        Get headers required for the Genesys Platform
         """
-        
         return self.get_xblock_settings().get('GENESYS_HEADERS', '')
 
     def api_invitation_params(self, user):
@@ -365,7 +369,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         result_dict = json.loads(result.text)
         result_list = result_dict[0]['results']
         earned_test_score = 0.0
-
         # Total the test score
         for i in range(len(result_list)):
             earned_test_score += result_list[i]['scales'][0]['raw']
@@ -425,7 +428,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             "bugs_email": bugs_email,
             "insufficient_credit": self.insufficient_credit
         }
-
 
         frag = Fragment(loader.render_django_template("static/html/genesys.html", context).format(self=self))
         frag.add_css(self.resource_string("static/css/genesys.css"))
@@ -511,7 +513,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         This is a XBlock json handler to store if the hyperlink to the Genesys
         invitation url has been clicked
         '''
-        
         self.test_started = True
         return {"started": True}
 
