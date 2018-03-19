@@ -31,7 +31,7 @@ loader = ResourceLoader(__name__)
 @XBlock.wants('user')
 class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSettingsMixin, XBlock, PublishEventMixin):
     """
-    TO-DO: document what your XBlock does.
+    This XBlock connects to the Genesys API 
     """
 
     # Fields are defined on the class.  You can access them in your code as
@@ -384,9 +384,14 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         """
         no_name = False
         studio_runtime = False
+        bugs_email = getattr(settings, 'BUGS_EMAIL', '')
+        
         # Check if the runtime is cms or lms
         if settings.ROOT_URLCONF == 'cms.urls':
             studio_runtime = True
+            student_account_url = ''
+        else:
+            student_account_url = reverse('account_settings')
         # If no invitation has been received, call Genesys invitations endpoint
         try:
             user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
@@ -409,9 +414,6 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 logger.error(str(e))
         else:
             pass
-
-        bugs_email = getattr(settings, 'BUGS_EMAIL', '')
-        student_account_url = reverse('account_settings')
 
         context = {
             "no_name": no_name,
