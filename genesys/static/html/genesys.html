@@ -5,7 +5,7 @@
 	{% elif studio_runtime %}
 		<p>{{instruction}}</p>
 		<a class="genesys-test-link" target="_blank">The invitation URL is only visible via LMS.</a>
-	{% elif and insufficient_credit%}
+	{% elif insufficient_credit%}
 		<p>There is insufficient credit to use this service. Please contact your adminstator on {{bugs_email}}.</p>
     {% elif not invitation_successful and not insufficient_credit%}
         <p>There was an error trying to access this test. Please contact your adminstator on {{bugs_email}}.</p>
