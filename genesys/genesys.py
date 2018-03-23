@@ -290,7 +290,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
                 'respondent_id': self.respondent_id,
                 'invitation_url': self.invitation_url
             }
-        elif "Insufficient Credits for Request" in invitation.text:
+        elif "error" in invitation.text and "Insufficient Credits for Request" in invitation.text.get("error"):
             self.insufficient_credit = True
             raise Exception('There was an error with the Genesys invitations endpoint. {}'.format(str(invitation.text)))
         else:
@@ -315,7 +315,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             # publish the raw_earned and raw_possible score
             calculated_total_score = self.calculate_score(result)
             self.publish_grade(score=calculated_total_score)
-        elif "Insufficient Credits for Request" in result.text:
+        elif "error" in invitation.text and "Insufficient Credits for Request" in invitation.text.get("error"):
             self.insufficient_credit = True
             raise Exception('The was an error with the Genesys results endpoint. {}'.format(str(result.text)))
         else:
