@@ -284,6 +284,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
             self.respondent_id = invitation.json()['respondentId']
             self.invitation_url = invitation.json()['invitationUrl']
             self.invitation_successful = True
+            self.insufficient_credit = False
         
             return {
                 'invitation_id': self.invitation_id,
@@ -310,6 +311,8 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         if result.ok:
             self.test_completed = True
             self.invitation_successful = True
+            # force set insufficient_credit to false, as we have everything we need now.
+            self.insufficient_credit = False
             # set the score in the user state
             self.score = self.get_individual_test_scores(result)
             # publish the raw_earned and raw_possible score
