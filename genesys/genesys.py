@@ -248,7 +248,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # Check the user has a first and last name, and gender defined in profile
         if user.profile.gender is None:
             user.profile.gender = 'o'
-            user.save()
+            user.profile.save()
         if not user.first_name or not user.last_name:
             user.first_name = user.profile.name.split(' ')[0]
             user.last_name = user.profile.name.split(' ')[-1]
