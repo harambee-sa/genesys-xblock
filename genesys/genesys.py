@@ -398,7 +398,7 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         # If no invitation has been received, call Genesys invitations endpoint
         try:
             user =  self.runtime.get_real_user(self.runtime.anonymous_student_id)
-            if not user.first_name or not user.last_name:
+            if not user.first_name or not user.last_name or not user.profile.gender:
                 no_name = True
         except Exception as e:
             logger.error(str(e))
