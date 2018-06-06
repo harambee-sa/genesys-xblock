@@ -498,18 +498,29 @@ class GenesysXBlock(StudioEditableXBlockMixin, ScorableXBlockMixin, XBlockWithSe
         Publishes the student's current grade to the system as an event
         """
         if score is None:
-            score = Score(earned=0, possible=self.max_score())
+            score = Score(earned=self._get_earned_from_saved_score():, possible=self.max_score())
 
         self.runtime.publish(
             self,
             'grade',
             {
                 'value': score.raw_earned,
-                'max_value': score.raw_possible,
+                'max_value': self.max_score(),
             }
         )
 
-        return {'grade': score.raw_earned, 'max_grade': score.raw_possible}
+        return {'grade': score.raw_earned, 'max_grade': score.possible}
+
+    def _get_earned_from_saved_score():
+        total = 0
+        if self.score:
+            for key, value in self.score.items():
+                total += value[0]
+
+        if total == 0:
+            logger.warn("Score could not be calculated from user state score")
+
+        return total
 
     @XBlock.json_handler
     def test_started_handler(self, data, suffix=''):
